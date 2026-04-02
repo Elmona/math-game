@@ -13,7 +13,7 @@ Updated after each completed step.
 
 - [x] Step 1.1 — Supabase schema
 - [x] Step 1.2 — Team API routes
-- [ ] Step 1.3 — Player API routes
+- [x] Step 1.3 — Player API routes
 
 ## Phase 2 — Game logic
 
@@ -48,7 +48,11 @@ Updated after each completed step.
 - Added language decisions: Swedish v1, `next-intl` from day one, English/Finnish stubs prepared
 - Added copy tone standard: young, playful, encouraging — written for children 7–14
 - Added ADR-012 (i18n) and ADR-013 (copy tone)
-- **Next**: Step 1.3 — Player API routes
+- **Next**: Step 2.1 — Question generator
+
+### Step 1.3 — Player API routes (2026-04-02)
+- `POST /api/players` — validates name, optional joinCode lookup, inserts player, returns 201
+- TDD: 6 new tests, 23 total passing
 
 ### Step 1.2 — Team API routes (2026-04-02)
 - `POST /api/teams` — validates name, generates join code, inserts team, returns 201
