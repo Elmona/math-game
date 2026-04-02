@@ -23,6 +23,10 @@ const INPUT_CLASS =
   "w-full rounded-xl border-2 border-indigo-600 bg-indigo-900 px-4 py-3 text-white text-lg placeholder:text-indigo-400 focus:border-yellow-400 focus:outline-none";
 
 // ── Numpad ─────────────────────────────────────────────────────────────────
+// onMouseDown e.preventDefault() prevents buttons from stealing focus from
+// the hidden capture input, so the keyboard listener keeps working after
+// a tap on mobile or a click on desktop.
+
 const NUMPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓"] as const;
 
 function Numpad({
@@ -39,11 +43,7 @@ function Numpad({
   hasAnswer: boolean;
 }) {
   return (
-    <div
-      role="group"
-      aria-label="Sifferknappar"
-      className="grid grid-cols-3 gap-2 w-full max-w-sm"
-    >
+    <div role="group" aria-label="Sifferknappar" className="grid grid-cols-3 gap-2 w-full max-w-sm">
       {NUMPAD_KEYS.map((key) => {
         const isConfirm = key === "✓";
         const isDelete = key === "⌫";
@@ -53,10 +53,10 @@ function Numpad({
           <button
             key={key}
             type="button"
-            aria-label={
-              isConfirm ? "Svara" : isDelete ? "Radera" : `Siffra ${key}`
-            }
+            aria-label={isConfirm ? "Svara" : isDelete ? "Radera" : `Siffra ${key}`}
             disabled={isDisabled}
+            // Prevent focus from leaving the capture input on every tap/click
+            onMouseDown={(e) => e.preventDefault()}
             onClick={() => {
               if (isDelete) onDelete();
               else if (isConfirm) onConfirm();
@@ -94,9 +94,7 @@ export default function GamePage() {
     initialPlayerId ? "playing" : "name-entry"
   );
   const [playerId, setPlayerId] = useState<string | null>(initialPlayerId);
-  const [questions] = useState<Question[]>(() =>
-    generateRound(QUESTIONS_PER_ROUND)
-  );
+  const [questions] = useState<Question[]>(() => generateRound(QUESTIONS_PER_ROUND));
   const [current, setCurrent] = useState(0);
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [correct, setCorrect] = useState(0);
@@ -108,7 +106,7 @@ export default function GamePage() {
   const [nameError, setNameError] = useState("");
   const [timerAnnounce, setTimerAnnounce] = useState("");
 
-  // Refs to read current values inside async callbacks
+  // Refs for values needed in async/submit callbacks
   const submittedRef = useRef(false);
   const correctRef = useRef(0);
   correctRef.current = correct;
@@ -119,9 +117,10 @@ export default function GamePage() {
   const playerIdRef = useRef<string | null>(initialPlayerId);
   playerIdRef.current = playerId;
 
-  // ── Answer evaluation — redefined every render so it always has fresh state.
-  //    Stored in a ref so the keyboard listener (registered once) can call
-  //    the latest version without stale closures.
+  // The hidden capture input — focused aggressively so keyboard always works
+  const captureRef = useRef<HTMLInputElement>(null);
+
+  // ── Answer evaluation ──────────────────────────────────────────────────
   function evaluate(raw: string) {
     if (feedback !== "idle") return;
     const guess = parseInt(raw.trim(), 10);
@@ -144,48 +143,22 @@ export default function GamePage() {
     }
     setAnswer("");
   }
-  const evaluateRef = useRef(evaluate);
-  evaluateRef.current = evaluate; // always points to the fresh version
 
-  // Keep answer in a ref so the keyboard handler can read it without
-  // being part of the effect's dependency array.
-  const answerRef = useRef("");
-  answerRef.current = answer;
-
-  // ── Keyboard input (desktop + external keyboards) ────────────────────────
-  // Registered ONCE per game phase — reads from refs so it never goes stale.
+  // ── Aggressive focus — keep keyboard capture input focused during play ──
   useEffect(() => {
-    if (phase !== "playing") return;
-
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      if (e.key >= "0" && e.key <= "9") {
-        e.preventDefault();
-        setAnswer((prev) => (prev.length < 3 ? prev + e.key : prev));
-      } else if (e.key === "Backspace") {
-        e.preventDefault();
-        setAnswer((prev) => prev.slice(0, -1));
-      } else if (e.key === "Enter") {
-        e.preventDefault();
-        evaluateRef.current(answerRef.current);
-      }
+    if (phase === "playing" && feedback === "idle") {
+      captureRef.current?.focus();
     }
-
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [phase]); // ← stable: only re-registers when the game starts/ends
+  }, [phase, feedback, current]);
 
   // ── Timer ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing") return;
-    const id = setInterval(
-      () => setTimeLeft((prev) => Math.max(0, prev - 1)),
-      1000
-    );
+    const id = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
     return () => clearInterval(id);
   }, [phase]);
 
-  // Announce timer at milestones only
+  // Announce timer at milestones only (not every second)
   useEffect(() => {
     if ([30, 10, 5, 3, 2, 1].includes(timeLeft)) {
       setTimerAnnounce(`${timeLeft} sekunder kvar`);
@@ -195,8 +168,7 @@ export default function GamePage() {
   // ── Game-over detection ────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing") return;
-    const done =
-      timeLeft <= 0 || (questions.length > 0 && current >= questions.length);
+    const done = timeLeft <= 0 || (questions.length > 0 && current >= questions.length);
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
     submitSession();
@@ -207,7 +179,7 @@ export default function GamePage() {
   useEffect(() => {
     if (feedback === "correct" || feedback === "reveal") {
       const id = setTimeout(() => {
-        setCurrent((prev) => prev + 1);
+        setCurrent((c) => c + 1);
         setWrongAttempts(0);
         setFeedback("idle");
         setAnswer("");
@@ -223,10 +195,7 @@ export default function GamePage() {
   // ── Submit session ─────────────────────────────────────────────────────
   async function submitSession() {
     setPhase("submitting");
-    const durationMs = Math.max(
-      0,
-      (ROUND_TIME_SECONDS - timeLeftRef.current) * 1000
-    );
+    const durationMs = Math.max(0, (ROUND_TIME_SECONDS - timeLeftRef.current) * 1000);
     try {
       const res = await fetch("/api/sessions", {
         method: "POST",
@@ -254,10 +223,7 @@ export default function GamePage() {
   async function handleSoloStart(e: React.FormEvent) {
     e.preventDefault();
     const name = playerName.trim();
-    if (!name) {
-      setNameError("Du måste ange ett namn för att spela.");
-      return;
-    }
+    if (!name) { setNameError("Du måste ange ett namn för att spela."); return; }
     setNameError("");
     try {
       const res = await fetch("/api/players", {
@@ -273,20 +239,15 @@ export default function GamePage() {
     }
   }
 
-  // ── Name entry screen ─────────────────────────────────────────────────
+  // ── Name entry screen ──────────────────────────────────────────────────
   if (phase === "name-entry") {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-10 bg-indigo-950 text-white">
         <div className="w-full max-w-sm flex flex-col gap-6">
-          <h1 className="text-3xl font-black text-center tracking-tight">
-            Vad heter du?
-          </h1>
+          <h1 className="text-3xl font-black text-center tracking-tight">Vad heter du?</h1>
           <form onSubmit={handleSoloStart} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
-              <label
-                htmlFor="solo-name"
-                className="text-sm font-semibold text-indigo-200"
-              >
+              <label htmlFor="solo-name" className="text-sm font-semibold text-indigo-200">
                 Ditt namn
               </label>
               <input
@@ -300,19 +261,12 @@ export default function GamePage() {
                 aria-describedby={nameError ? "name-error" : undefined}
               />
               {nameError && (
-                <p id="name-error" role="alert" className="text-red-400 text-sm">
-                  {nameError}
-                </p>
+                <p id="name-error" role="alert" className="text-red-400 text-sm">{nameError}</p>
               )}
             </div>
-            <button type="submit" className={BTN_PRIMARY}>
-              Spela! 🚀
-            </button>
+            <button type="submit" className={BTN_PRIMARY}>Spela! 🚀</button>
           </form>
-          <a
-            href="/"
-            className={`text-center text-sm text-indigo-400 hover:text-indigo-200 underline ${FOCUS_RING} rounded`}
-          >
+          <a href="/" className={`text-center text-sm text-indigo-400 hover:text-indigo-200 underline ${FOCUS_RING} rounded`}>
             ← Tillbaka
           </a>
         </div>
@@ -323,10 +277,7 @@ export default function GamePage() {
   // ── Submitting ─────────────────────────────────────────────────────────
   if (phase === "submitting" || current >= questions.length) {
     return (
-      <main
-        className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl"
-        aria-live="polite"
-      >
+      <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl" aria-live="polite">
         Sparar resultat…
       </main>
     );
@@ -339,17 +290,13 @@ export default function GamePage() {
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-4 bg-indigo-950 text-white gap-4">
       {/* Screen-reader timer milestone announcements */}
-      <span aria-live="assertive" className="sr-only">
-        {timerAnnounce}
-      </span>
+      <span aria-live="assertive" className="sr-only">{timerAnnounce}</span>
 
       {/* Timer + progress row */}
       <div className="w-full max-w-sm flex items-center justify-between gap-4">
         <span
           aria-hidden="true"
-          className={`text-2xl font-bold tabular-nums transition-colors ${
-            isUrgent ? "text-red-400" : "text-indigo-200"
-          }`}
+          className={`text-2xl font-bold tabular-nums transition-colors ${isUrgent ? "text-red-400" : "text-indigo-200"}`}
         >
           {timeLeft}s
         </span>
@@ -365,76 +312,80 @@ export default function GamePage() {
       </div>
 
       {/* Question */}
-      <div
-        key={current}
-        className="question-enter flex flex-col items-center gap-2 text-center"
-        aria-live="polite"
-        aria-atomic="true"
-      >
-        <p className="text-5xl font-black tracking-tight">
-          {t("question", { a: q.a, b: q.b })}
-        </p>
-      </div>
-
-      {/* Answer display — updated by both numpad and keyboard */}
-      <div
-        aria-live="polite"
-        aria-label={answer ? `Ditt svar: ${answer}` : "Inget svar ännu"}
-        className={[
-          "w-full max-w-sm rounded-2xl border-2 px-6 py-4 text-center text-4xl font-black tabular-nums tracking-widest transition-colors",
-          feedback === "correct"
-            ? "border-green-400 text-green-400"
-            : feedback === "wrong"
-            ? "border-red-400 text-red-400"
-            : "border-indigo-600 text-white",
-          answer ? "" : "text-indigo-600",
-        ].join(" ")}
-      >
-        {answer || "—"}
+      <div key={current} className="question-enter flex flex-col items-center gap-2 text-center" aria-live="polite" aria-atomic="true">
+        <p className="text-5xl font-black tracking-tight">{t("question", { a: q.a, b: q.b })}</p>
       </div>
 
       {/* Wrong-attempt dots */}
-      <div
-        aria-label={`${MAX_WRONG_ATTEMPTS - wrongAttempts} försök kvar`}
-        className="flex gap-2"
-      >
+      <div aria-label={`${MAX_WRONG_ATTEMPTS - wrongAttempts} försök kvar`} className="flex gap-2">
         {Array.from({ length: MAX_WRONG_ATTEMPTS }).map((_, i) => (
-          <span
-            key={i}
-            className={`w-3 h-3 rounded-full transition-colors ${
-              i < wrongAttempts ? "bg-red-400" : "bg-indigo-600"
-            }`}
-          />
+          <span key={i} className={`w-3 h-3 rounded-full transition-colors ${i < wrongAttempts ? "bg-red-400" : "bg-indigo-600"}`} />
         ))}
+      </div>
+
+      {/* Answer display + hidden capture input
+          inputMode="none" → no OS keyboard on mobile, but physical keyboards
+          still fire onChange because inputMode only controls the virtual keyboard.
+          Aggressive focus (via useEffect above) keeps keyboard input working
+          even after the numpad buttons are tapped. */}
+      <div className="w-full max-w-sm flex flex-col items-center gap-1">
+        <label htmlFor="capture-input" className="sr-only">Ditt svar</label>
+
+        {/* Visual display */}
+        <div
+          aria-hidden="true"
+          className={[
+            "w-full rounded-2xl border-2 px-6 py-4 text-center text-4xl font-black tabular-nums tracking-widest transition-colors pointer-events-none",
+            feedback === "correct" ? "border-green-400 text-green-400"
+              : feedback === "wrong" ? "border-red-400 text-red-400"
+              : "border-indigo-600 text-white",
+            answer ? "" : "text-indigo-600",
+          ].join(" ")}
+        >
+          {answer || "—"}
+        </div>
+
+        {/* Actual focused input — visually hidden, captures keyboard */}
+        <input
+          id="capture-input"
+          ref={captureRef}
+          type="text"
+          inputMode="none"
+          autoComplete="off"
+          value={answer}
+          disabled={feedback !== "idle"}
+          onChange={(e) => {
+            // Strip non-digits, max 3 chars (10×10=100 is the max answer)
+            const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
+            setAnswer(digits);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              evaluate(answer);
+            }
+          }}
+          className="sr-only"
+          aria-describedby="feedback-msg"
+        />
       </div>
 
       {/* Feedback */}
       <div
+        id="feedback-msg"
         role="alert"
         aria-atomic="true"
         aria-live="assertive"
-        className={`text-center text-xl font-bold min-h-[1.75rem] transition-opacity ${
-          feedback === "idle" ? "opacity-0" : "opacity-100"
-        }`}
+        className={`text-center text-xl font-bold min-h-[1.75rem] transition-opacity ${feedback === "idle" ? "opacity-0" : "opacity-100"}`}
       >
-        {feedback === "correct" && (
-          <span className="text-green-400">{t("correct")}</span>
-        )}
-        {feedback === "wrong" && (
-          <span className="text-yellow-300">{t("wrong")}</span>
-        )}
-        {feedback === "reveal" && (
-          <span className="text-indigo-300">
-            {t("reveal", { answer: q.answer })}
-          </span>
-        )}
+        {feedback === "correct" && <span className="text-green-400">{t("correct")}</span>}
+        {feedback === "wrong" && <span className="text-yellow-300">{t("wrong")}</span>}
+        {feedback === "reveal" && <span className="text-indigo-300">{t("reveal", { answer: q.answer })}</span>}
       </div>
 
-      {/* Numpad — always visible, works alongside keyboard input */}
+      {/* Numpad — onMouseDown preventDefault keeps focus on the capture input */}
       <Numpad
-        onDigit={(d) =>
-          setAnswer((prev) => (prev.length < 3 ? prev + d : prev))
-        }
+        onDigit={(d) => setAnswer((prev) => (prev.length < 3 ? prev + d : prev))}
         onDelete={() => setAnswer((prev) => prev.slice(0, -1))}
         onConfirm={() => evaluate(answer)}
         disabled={feedback !== "idle"}
