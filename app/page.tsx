@@ -17,13 +17,13 @@ export default async function Home() {
       <div className="flex flex-col gap-4 w-full max-w-xs">
         <Link
           href="/spela"
-          className="flex items-center justify-center rounded-2xl bg-yellow-400 px-8 py-5 text-xl font-bold text-indigo-950 shadow-lg hover:bg-yellow-300 active:scale-95 transition-all"
+          className="flex items-center justify-center rounded-2xl bg-yellow-400 px-8 py-5 text-xl font-bold text-indigo-950 shadow-lg hover:bg-yellow-300 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-300 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950"
         >
           {t("playSolo")}
         </Link>
         <Link
           href="/lag"
-          className="flex items-center justify-center rounded-2xl bg-indigo-700 px-8 py-5 text-xl font-bold text-white shadow-lg hover:bg-indigo-600 active:scale-95 transition-all"
+          className="flex items-center justify-center rounded-2xl bg-indigo-700 px-8 py-5 text-xl font-bold text-white shadow-lg hover:bg-indigo-600 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950"
         >
           {t("joinTeam")}
         </Link>
