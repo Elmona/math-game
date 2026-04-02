@@ -1,0 +1,55 @@
+{
+  "common": {
+    "appName": "Mattespelet",
+    "play": "Spela!",
+    "back": "Tillbaka"
+  },
+  "home": {
+    "title": "Mattespelet",
+    "subtitle": "Träna multiplikation och tävla med kompisar!",
+    "playSolo": "Spela själv",
+    "joinTeam": "Gå med i ett lag",
+    "createTeam": "Skapa ett lag"
+  },
+  "game": {
+    "question": "{a} × {b} = ?",
+    "correct": "Rätt! 🎉",
+    "wrong": "Nästan! Försök igen 💪",
+    "reveal": "Rätt svar är {answer} — nu kör vi vidare!",
+    "timeLeft": "{seconds} sekunder kvar",
+    "attemptsLeft": "{attempts} försök kvar"
+  },
+  "results": {
+    "title": "Bra jobbat! 🌟",
+    "yourScore": "Din poäng",
+    "correct": "Rätt svar",
+    "reveals": "Ledtrådar",
+    "viewLeaderboard": "Se topplistan",
+    "playAgain": "Spela igen!"
+  },
+  "team": {
+    "createTitle": "Skapa ett lag",
+    "teamName": "Vad ska laget heta?",
+    "createButton": "Skapa laget!",
+    "joinTitle": "Gå med i ett lag",
+    "yourName": "Vad heter du?",
+    "joinCode": "Lagets kod",
+    "joinButton": "Gå med!",
+    "codeCopied": "Koden kopierades!",
+    "shareCode": "Dela den här koden med dina lagkamrater:"
+  },
+  "leaderboard": {
+    "title": "Topplistan",
+    "individual": "Spelare",
+    "teams": "Lag",
+    "rank": "Plats",
+    "name": "Namn",
+    "score": "Poäng",
+    "empty": "Inga resultat ännu — bli den första!"
+  },
+  "errors": {
+    "invalidCode": "Den koden finns inte. Kolla med den som skapade laget!",
+    "nameRequired": "Du måste ange ett namn för att spela.",
+    "generic": "Något gick fel. Försök igen!"
+  }
+}
