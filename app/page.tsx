@@ -7,11 +7,11 @@ export default async function Home() {
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-10 px-6 py-16 bg-indigo-950 text-white text-center">
       <div className="flex flex-col items-center gap-4">
-        <span className="text-7xl" role="img" aria-label="multiplikation">
+        <span className="text-5xl sm:text-7xl" role="img" aria-label="multiplikation">
           ✖️
         </span>
-        <h1 className="text-5xl font-black tracking-tight">{t("title")}</h1>
-        <p className="text-xl text-indigo-200 max-w-sm">{t("subtitle")}</p>
+        <h1 className="text-4xl sm:text-5xl font-black tracking-tight">{t("title")}</h1>
+        <p className="text-lg sm:text-xl text-indigo-200 max-w-sm">{t("subtitle")}</p>
       </div>
 
       <div className="flex flex-col gap-4 w-full max-w-xs">

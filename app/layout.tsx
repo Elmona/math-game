@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Mattespelet",
   description: "Träna multiplikation och tävla med kompisar!",
+  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
 };
 
 export default async function RootLayout({

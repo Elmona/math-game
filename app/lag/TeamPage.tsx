@@ -106,7 +106,7 @@ export default function TeamPage() {
               <p className="text-indigo-200">{t("shareCode")}</p>
               <output
                 aria-label="Lagets kod"
-                className="text-5xl font-mono font-black tracking-widest text-yellow-400"
+                className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-yellow-400 break-all"
               >
                 {createState.joinCode}
               </output>

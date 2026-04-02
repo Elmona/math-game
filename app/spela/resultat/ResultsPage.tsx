@@ -9,7 +9,7 @@ const FOCUS_RING =
 
 function ScoreBadge({ score }: { score: number }) {
   const size =
-    score >= 200 ? "text-8xl" : score >= 100 ? "text-7xl" : "text-6xl";
+    score >= 200 ? "text-6xl sm:text-8xl" : score >= 100 ? "text-5xl sm:text-7xl" : "text-5xl sm:text-6xl";
   return (
     <p
       className={`${size} font-black text-yellow-400 tabular-nums leading-none`}
@@ -49,7 +49,7 @@ export default function ResultsPage() {
       </section>
 
       {/* Stats */}
-      <dl className="flex gap-8 text-center">
+      <dl className="flex gap-6 sm:gap-8 text-center">
         <div className="flex flex-col gap-1">
           <dt className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
             {t("correct")}

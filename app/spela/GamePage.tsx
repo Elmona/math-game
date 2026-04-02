@@ -64,7 +64,7 @@ function Numpad({
               else onDigit(key);
             }}
             className={[
-              "rounded-2xl text-3xl font-bold min-h-[72px] transition-all active:scale-95",
+              "rounded-2xl text-2xl sm:text-3xl font-bold min-h-[56px] sm:min-h-[72px] transition-all active:scale-95",
               FOCUS_RING,
               isConfirm
                 ? "bg-yellow-400 text-indigo-950 hover:bg-yellow-300"
@@ -310,7 +310,7 @@ export default function GamePage() {
   const isUrgent = timeLeft <= 10;
 
   return (
-    <main className="flex flex-1 flex-col items-center px-4 py-4 bg-indigo-950 text-white gap-4">
+    <main className="flex flex-1 flex-col items-center px-4 py-2 sm:py-4 bg-indigo-950 text-white gap-3 sm:gap-4">
       {/* Screen-reader timer milestone announcements */}
       <span aria-live="assertive" className="sr-only">{timerAnnounce}</span>
 
@@ -335,7 +335,7 @@ export default function GamePage() {
 
       {/* Question */}
       <div key={current} className="question-enter flex flex-col items-center gap-2 text-center" aria-live="polite" aria-atomic="true">
-        <p className="text-5xl font-black tracking-tight">{t("question", { a: q.a, b: q.b })}</p>
+        <p className="text-4xl sm:text-5xl font-black tracking-tight">{t("question", { a: q.a, b: q.b })}</p>
       </div>
 
       {/* Wrong-attempt dots */}
@@ -357,7 +357,7 @@ export default function GamePage() {
         <div
           aria-hidden="true"
           className={[
-            "w-full rounded-2xl border-2 px-6 py-4 text-center text-4xl font-black tabular-nums tracking-widest transition-colors pointer-events-none",
+            "w-full rounded-2xl border-2 px-6 py-3 sm:py-4 text-center text-3xl sm:text-4xl font-black tabular-nums tracking-widest transition-colors pointer-events-none",
             feedback === "correct" ? "border-green-400 text-green-400"
               : feedback === "wrong" ? "border-red-400 text-red-400"
               : "border-indigo-600 text-white",

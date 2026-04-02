@@ -51,7 +51,7 @@ function RankTable({
                 <span className="text-indigo-400">{row.rank}</span>
               )}
             </td>
-            <td className="py-3 font-semibold text-white">{row.name}</td>
+            <td className="py-3 font-semibold text-white max-w-[140px] truncate">{row.name}</td>
             <td className="py-3 pl-4 text-right font-black tabular-nums text-yellow-400">
               {row.score}
               <span className="text-xs text-yellow-600 ml-1">p</span>
