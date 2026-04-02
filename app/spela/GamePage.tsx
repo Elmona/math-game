@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { generateRound, type Question } from "@/lib/question";
@@ -22,6 +22,66 @@ const BTN_PRIMARY =
 const INPUT_CLASS =
   "w-full rounded-xl border-2 border-indigo-600 bg-indigo-900 px-4 py-3 text-white text-lg placeholder:text-indigo-400 focus:border-yellow-400 focus:outline-none";
 
+// ── Numpad ─────────────────────────────────────────────────────────────────
+const NUMPAD_KEYS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "⌫", "0", "✓"] as const;
+
+function Numpad({
+  onDigit,
+  onDelete,
+  onConfirm,
+  disabled,
+  hasAnswer,
+}: {
+  onDigit: (d: string) => void;
+  onDelete: () => void;
+  onConfirm: () => void;
+  disabled: boolean;
+  hasAnswer: boolean;
+}) {
+  return (
+    <div
+      role="group"
+      aria-label="Sifferknappar"
+      className="grid grid-cols-3 gap-2 w-full max-w-sm"
+    >
+      {NUMPAD_KEYS.map((key) => {
+        const isConfirm = key === "✓";
+        const isDelete = key === "⌫";
+        const isDisabled = disabled || (isConfirm && !hasAnswer);
+
+        return (
+          <button
+            key={key}
+            type="button"
+            aria-label={
+              isConfirm ? "Svara" : isDelete ? "Radera" : `Siffra ${key}`
+            }
+            disabled={isDisabled}
+            onClick={() => {
+              if (isDelete) onDelete();
+              else if (isConfirm) onConfirm();
+              else onDigit(key);
+            }}
+            className={[
+              "rounded-2xl text-3xl font-bold min-h-[72px] transition-all active:scale-95",
+              FOCUS_RING,
+              isConfirm
+                ? "bg-yellow-400 text-indigo-950 hover:bg-yellow-300"
+                : isDelete
+                ? "bg-indigo-700 text-white hover:bg-indigo-600"
+                : "bg-indigo-800 text-white hover:bg-indigo-700",
+              isDisabled ? "opacity-40 cursor-not-allowed" : "",
+            ].join(" ")}
+          >
+            {key}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Main component ─────────────────────────────────────────────────────────
 export default function GamePage() {
   const t = useTranslations("game");
   const router = useRouter();
@@ -48,7 +108,7 @@ export default function GamePage() {
   const [nameError, setNameError] = useState("");
   const [timerAnnounce, setTimerAnnounce] = useState("");
 
-  // Refs to read current values inside async callbacks and effects
+  // Refs to read current values inside async callbacks
   const submittedRef = useRef(false);
   const correctRef = useRef(0);
   correctRef.current = correct;
@@ -59,7 +119,60 @@ export default function GamePage() {
   const playerIdRef = useRef<string | null>(initialPlayerId);
   playerIdRef.current = playerId;
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  // ── Answer evaluation (shared by numpad ✓ and keyboard Enter) ────────────
+  const evaluateAnswer = useCallback(
+    (raw: string) => {
+      if (feedback !== "idle") return;
+      const guess = parseInt(raw.trim(), 10);
+      if (isNaN(guess) || raw.trim() === "") return;
+
+      const q = questions[current];
+      if (guess === q.answer) {
+        setCorrect((c) => c + 1);
+        setFeedback("correct");
+      } else {
+        const next = wrongAttempts + 1;
+        if (next >= MAX_WRONG_ATTEMPTS) {
+          setReveals((r) => r + 1);
+          setWrongAttempts(0);
+          setFeedback("reveal");
+        } else {
+          setWrongAttempts(next);
+          setFeedback("wrong");
+        }
+      }
+      setAnswer("");
+    },
+    [feedback, questions, current, wrongAttempts]
+  );
+
+  // ── Keyboard input (desktop + external keyboards) ────────────────────────
+  useEffect(() => {
+    if (phase !== "playing") return;
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (feedback !== "idle") return;
+      // Ignore modifier combos
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+      if (e.key >= "0" && e.key <= "9") {
+        e.preventDefault();
+        setAnswer((prev) => (prev.length < 3 ? prev + e.key : prev));
+      } else if (e.key === "Backspace") {
+        e.preventDefault();
+        setAnswer((prev) => prev.slice(0, -1));
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        setAnswer((prev) => {
+          evaluateAnswer(prev);
+          return prev; // evaluateAnswer clears via its own setAnswer("") call
+        });
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [phase, feedback, evaluateAnswer]);
 
   // ── Timer ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -71,7 +184,7 @@ export default function GamePage() {
     return () => clearInterval(id);
   }, [phase]);
 
-  // Announce timer at milestones only (not every second)
+  // Announce timer at milestones only
   useEffect(() => {
     if ([30, 10, 5, 3, 2, 1].includes(timeLeft)) {
       setTimerAnnounce(`${timeLeft} sekunder kvar`);
@@ -82,8 +195,7 @@ export default function GamePage() {
   useEffect(() => {
     if (phase !== "playing") return;
     const done =
-      timeLeft <= 0 ||
-      (questions.length > 0 && current >= questions.length);
+      timeLeft <= 0 || (questions.length > 0 && current >= questions.length);
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
     submitSession();
@@ -107,14 +219,7 @@ export default function GamePage() {
     }
   }, [feedback]);
 
-  // ── Auto-focus input ───────────────────────────────────────────────────
-  useEffect(() => {
-    if (phase === "playing" && feedback === "idle") {
-      inputRef.current?.focus();
-    }
-  }, [current, feedback, phase]);
-
-  // ── Handlers ───────────────────────────────────────────────────────────
+  // ── Submit session ─────────────────────────────────────────────────────
   async function submitSession() {
     setPhase("submitting");
     const durationMs = Math.max(
@@ -144,6 +249,7 @@ export default function GamePage() {
     }
   }
 
+  // ── Solo name entry ────────────────────────────────────────────────────
   async function handleSoloStart(e: React.FormEvent) {
     e.preventDefault();
     const name = playerName.trim();
@@ -166,31 +272,7 @@ export default function GamePage() {
     }
   }
 
-  function handleAnswer(e: React.FormEvent) {
-    e.preventDefault();
-    if (feedback !== "idle") return;
-    const guess = parseInt(answer.trim(), 10);
-    if (isNaN(guess)) return;
-
-    const q = questions[current];
-    if (guess === q.answer) {
-      setCorrect((c) => c + 1);
-      setFeedback("correct");
-    } else {
-      const next = wrongAttempts + 1;
-      if (next >= MAX_WRONG_ATTEMPTS) {
-        setReveals((r) => r + 1);
-        setWrongAttempts(0);
-        setFeedback("reveal");
-      } else {
-        setWrongAttempts(next);
-        setFeedback("wrong");
-      }
-    }
-    setAnswer("");
-  }
-
-  // ── Name entry screen (solo) ───────────────────────────────────────────
+  // ── Name entry screen ─────────────────────────────────────────────────
   if (phase === "name-entry") {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-10 bg-indigo-950 text-white">
@@ -249,12 +331,12 @@ export default function GamePage() {
     );
   }
 
-  // ── Game screen ────────────────────────────────────────────────────────
+  // ── Game board ─────────────────────────────────────────────────────────
   const q = questions[current];
   const isUrgent = timeLeft <= 10;
 
   return (
-    <main className="flex flex-1 flex-col items-center px-4 py-6 bg-indigo-950 text-white gap-6">
+    <main className="flex flex-1 flex-col items-center px-4 py-4 bg-indigo-950 text-white gap-4">
       {/* Screen-reader timer milestone announcements */}
       <span aria-live="assertive" className="sr-only">
         {timerAnnounce}
@@ -293,6 +375,23 @@ export default function GamePage() {
         </p>
       </div>
 
+      {/* Answer display — updated by both numpad and keyboard */}
+      <div
+        aria-live="polite"
+        aria-label={answer ? `Ditt svar: ${answer}` : "Inget svar ännu"}
+        className={[
+          "w-full max-w-sm rounded-2xl border-2 px-6 py-4 text-center text-4xl font-black tabular-nums tracking-widest transition-colors",
+          feedback === "correct"
+            ? "border-green-400 text-green-400"
+            : feedback === "wrong"
+            ? "border-red-400 text-red-400"
+            : "border-indigo-600 text-white",
+          answer ? "" : "text-indigo-600",
+        ].join(" ")}
+      >
+        {answer || "—"}
+      </div>
+
       {/* Wrong-attempt dots */}
       <div
         aria-label={`${MAX_WRONG_ATTEMPTS - wrongAttempts} försök kvar`}
@@ -301,49 +400,19 @@ export default function GamePage() {
         {Array.from({ length: MAX_WRONG_ATTEMPTS }).map((_, i) => (
           <span
             key={i}
-            className={`w-3 h-3 rounded-full ${
+            className={`w-3 h-3 rounded-full transition-colors ${
               i < wrongAttempts ? "bg-red-400" : "bg-indigo-600"
             }`}
           />
         ))}
       </div>
 
-      {/* Answer form */}
-      <form
-        onSubmit={handleAnswer}
-        className="w-full max-w-sm flex flex-col gap-4"
-      >
-        <label htmlFor="answer" className="sr-only">
-          Ditt svar
-        </label>
-        <input
-          id="answer"
-          ref={inputRef}
-          type="text"
-          inputMode="numeric"
-          autoComplete="off"
-          value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
-          disabled={feedback !== "idle"}
-          className={`${INPUT_CLASS} text-3xl text-center tracking-widest`}
-          aria-describedby="feedback-msg"
-        />
-        <button
-          type="submit"
-          disabled={feedback !== "idle" || !answer.trim()}
-          className={BTN_PRIMARY}
-        >
-          OK
-        </button>
-      </form>
-
       {/* Feedback */}
       <div
-        id="feedback-msg"
         role="alert"
         aria-atomic="true"
         aria-live="assertive"
-        className={`text-center text-2xl font-bold min-h-[2rem] transition-opacity ${
+        className={`text-center text-xl font-bold min-h-[1.75rem] transition-opacity ${
           feedback === "idle" ? "opacity-0" : "opacity-100"
         }`}
       >
@@ -359,6 +428,17 @@ export default function GamePage() {
           </span>
         )}
       </div>
+
+      {/* Numpad — always visible, works alongside keyboard input */}
+      <Numpad
+        onDigit={(d) =>
+          setAnswer((prev) => (prev.length < 3 ? prev + d : prev))
+        }
+        onDelete={() => setAnswer((prev) => prev.slice(0, -1))}
+        onConfirm={() => evaluateAnswer(answer)}
+        disabled={feedback !== "idle"}
+        hasAnswer={answer.length > 0}
+      />
     </main>
   );
 }
