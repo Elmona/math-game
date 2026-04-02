@@ -7,7 +7,7 @@ Updated after each completed step.
 ## Phase 0 — Foundation
 
 - [x] Step 0.1 — Documentation files created
-- [ ] Step 0.2 — Project scaffold (Next.js + Jest)
+- [x] Step 0.2 — Project scaffold (Next.js + Jest + next-intl)
 
 ## Phase 1 — Database & API foundation
 
@@ -48,4 +48,12 @@ Updated after each completed step.
 - Added language decisions: Swedish v1, `next-intl` from day one, English/Finnish stubs prepared
 - Added copy tone standard: young, playful, encouraging — written for children 7–14
 - Added ADR-012 (i18n) and ADR-013 (copy tone)
-- **Next**: Step 0.2 — scaffold Next.js project with Jest + next-intl
+- **Next**: Step 1.1 — Supabase schema (teams, players, game_sessions)
+
+### Step 0.2 — Project scaffold (2026-04-02)
+- Scaffolded Next.js 16 with TypeScript, Tailwind, App Router
+- Added Jest + React Testing Library + ts-node
+- TDD: wrote failing score tests first, then implemented `calculateScore` / `formatScore`
+- Added next-intl: Swedish default, en/fi stubs ready
+- Written `messages/sv.json` with full child-friendly Swedish copy
+- 5 commits, all passing
