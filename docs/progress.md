@@ -18,7 +18,7 @@ Updated after each completed step.
 ## Phase 2 — Game logic
 
 - [x] Step 2.1 — Question generator
-- [ ] Step 2.2 — Score submission API
+- [x] Step 2.2 — Score submission API
 
 ## Phase 3 — Frontend
 
@@ -48,7 +48,11 @@ Updated after each completed step.
 - Added language decisions: Swedish v1, `next-intl` from day one, English/Finnish stubs prepared
 - Added copy tone standard: young, playful, encouraging — written for children 7–14
 - Added ADR-012 (i18n) and ADR-013 (copy tone)
-- **Next**: Step 2.2 — Score submission API
+- **Next**: Step 3.1 — Home page
+
+### Step 2.2 — Score submission API (2026-04-02)
+- `POST /api/sessions`: validates correct/reveals/durationMs, recomputes score server-side, persists session
+- TDD: 10 new tests, 40 total passing
 
 ### Step 2.1 — Question generator (2026-04-02)
 - `lib/config.ts`: FACTOR_MAX, QUESTIONS_PER_ROUND, ROUND_TIME_SECONDS, MAX_WRONG_ATTEMPTS
