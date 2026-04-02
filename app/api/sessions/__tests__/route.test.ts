@@ -57,9 +57,9 @@ describe("POST /api/sessions", () => {
       duration_ms: 30000, started_at: "x", finished_at: "x", created_at: "x",
     });
 
-    // correct=10, reveals=0, durationMs=30000 → remainingSeconds=30
+    // correct=10, reveals=0, durationMs=90000 → remainingSeconds=30 (120-90)
     // score = (10×10) - (0×3) + (30×2) = 160
-    await POST(makeRequest({ ...validBody, correct: 10, reveals: 0, durationMs: 30000, score: 9999 }));
+    await POST(makeRequest({ ...validBody, correct: 10, reveals: 0, durationMs: 90000, score: 9999 }));
     expect(createSession.mock.calls[0][0].score).toBe(160);
   });
 
