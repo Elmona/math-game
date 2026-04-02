@@ -11,7 +11,7 @@ Updated after each completed step.
 
 ## Phase 1 — Database & API foundation
 
-- [ ] Step 1.1 — Supabase schema
+- [x] Step 1.1 — Supabase schema
 - [ ] Step 1.2 — Team API routes
 - [ ] Step 1.3 — Player API routes
 
@@ -48,7 +48,12 @@ Updated after each completed step.
 - Added language decisions: Swedish v1, `next-intl` from day one, English/Finnish stubs prepared
 - Added copy tone standard: young, playful, encouraging — written for children 7–14
 - Added ADR-012 (i18n) and ADR-013 (copy tone)
-- **Next**: Step 1.1 — Supabase schema (teams, players, game_sessions)
+- **Next**: Step 1.2 — Team API routes
+
+### Step 1.1 — Supabase schema (2026-04-02)
+- Created `supabase/migrations/0001_initial_schema.sql` with `teams`, `players`, `game_sessions`
+- Added `docs/schema.md` as schema reference
+- Plain SQL, no ORM (ADR-008); solo-player support via nullable `team_id`
 
 ### Step 0.2 — Project scaffold (2026-04-02)
 - Scaffolded Next.js 16 with TypeScript, Tailwind, App Router
