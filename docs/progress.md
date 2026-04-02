@@ -25,8 +25,8 @@ Updated after each completed step.
 - [x] Step 3.1 — Home page
 - [x] Step 3.2 — Team creation / join flow
 - [x] Step 3.3 — Game screen
-- [ ] Step 3.4 — Results screen
-- [ ] Step 3.5 — Leaderboard
+- [x] Step 3.4 — Results screen
+- [x] Step 3.5 — Leaderboard
 
 ## Phase 4 — Polish & deployment
 
@@ -48,7 +48,7 @@ Updated after each completed step.
 - Added language decisions: Swedish v1, `next-intl` from day one, English/Finnish stubs prepared
 - Added copy tone standard: young, playful, encouraging — written for children 7–14
 - Added ADR-012 (i18n) and ADR-013 (copy tone)
-- **Next**: Step 3.4 — Results screen
+- **Next**: Step 4.1 — Responsive design check
 
 ### Step 3.3 — Game screen (2026-04-02)
 - `/spela`: solo name entry → create player; team: reads URL params
