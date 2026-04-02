@@ -122,7 +122,8 @@ export default function GamePage() {
 
   // ── Answer evaluation ──────────────────────────────────────────────────
   function evaluate(raw: string) {
-    if (feedback !== "idle") return;
+    // Only block during "wrong" flash — correct/reveal don't lock input
+    if (feedback === "wrong") return;
     const guess = parseInt(raw.trim(), 10);
     if (isNaN(guess) || !raw.trim()) return;
 
@@ -130,23 +131,30 @@ export default function GamePage() {
     if (guess === q.answer) {
       setCorrect((c) => c + 1);
       setFeedback("correct");
+      // Advance immediately so user can type the next question right away
+      setCurrent((c) => c + 1);
+      setWrongAttempts(0);
+      setAnswer("");
     } else {
       const next = wrongAttempts + 1;
       if (next >= MAX_WRONG_ATTEMPTS) {
         setReveals((r) => r + 1);
         setWrongAttempts(0);
         setFeedback("reveal");
+        // Advance immediately
+        setCurrent((c) => c + 1);
+        setAnswer("");
       } else {
         setWrongAttempts(next);
         setFeedback("wrong");
+        setAnswer("");
       }
     }
-    setAnswer("");
   }
 
   // ── Aggressive focus — keep keyboard capture input focused during play ──
   useEffect(() => {
-    if (phase === "playing" && feedback === "idle") {
+    if (phase === "playing" && feedback !== "wrong") {
       captureRef.current?.focus();
     }
   }, [phase, feedback, current]);
@@ -175,21 +183,12 @@ export default function GamePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeLeft, current, phase]);
 
-  // ── Feedback auto-advance ──────────────────────────────────────────────
+  // ── Feedback flash — clear after a short delay ─────────────────────────
   useEffect(() => {
-    if (feedback === "correct" || feedback === "reveal") {
-      const id = setTimeout(() => {
-        setCurrent((c) => c + 1);
-        setWrongAttempts(0);
-        setFeedback("idle");
-        setAnswer("");
-      }, 1200);
-      return () => clearTimeout(id);
-    }
-    if (feedback === "wrong") {
-      const id = setTimeout(() => setFeedback("idle"), 700);
-      return () => clearTimeout(id);
-    }
+    if (feedback === "idle") return;
+    const delay = feedback === "wrong" ? 700 : 500;
+    const id = setTimeout(() => setFeedback("idle"), delay);
+    return () => clearTimeout(id);
   }, [feedback]);
 
   // ── Submit session ─────────────────────────────────────────────────────
@@ -353,7 +352,7 @@ export default function GamePage() {
           inputMode="none"
           autoComplete="off"
           value={answer}
-          disabled={feedback !== "idle"}
+          disabled={feedback === "wrong"}
           onChange={(e) => {
             // Strip non-digits, max 3 chars (10×10=100 is the max answer)
             const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
@@ -388,7 +387,7 @@ export default function GamePage() {
         onDigit={(d) => setAnswer((prev) => (prev.length < 3 ? prev + d : prev))}
         onDelete={() => setAnswer((prev) => prev.slice(0, -1))}
         onConfirm={() => evaluate(answer)}
-        disabled={feedback !== "idle"}
+        disabled={feedback === "wrong"}
         hasAnswer={answer.length > 0}
       />
     </main>
