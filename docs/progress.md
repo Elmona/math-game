@@ -23,7 +23,7 @@ Updated after each completed step.
 ## Phase 3 — Frontend
 
 - [x] Step 3.1 — Home page
-- [ ] Step 3.2 — Team creation / join flow
+- [x] Step 3.2 — Team creation / join flow
 - [ ] Step 3.3 — Game screen
 - [ ] Step 3.4 — Results screen
 - [ ] Step 3.5 — Leaderboard
@@ -48,7 +48,13 @@ Updated after each completed step.
 - Added language decisions: Swedish v1, `next-intl` from day one, English/Finnish stubs prepared
 - Added copy tone standard: young, playful, encouraging — written for children 7–14
 - Added ADR-012 (i18n) and ADR-013 (copy tone)
-- **Next**: Step 3.2 — Team creation / join flow
+- **Next**: Step 3.3 — Game screen
+
+### Step 3.2 — Team creation / join flow (2026-04-02)
+- `/lag`: tabbed UI (create/join), keyboard-accessible (arrow key nav, role=tablist)
+- Server Actions: createTeamAction, joinTeamAction
+- WCAG: labels, role=alert errors, aria-live copy confirm, min-h-[44px] targets, focus rings
+- Bonus: home page focus rings retrofitted; NextIntlClientProvider added to layout
 
 ### Step 3.1 — Home page (2026-04-02)
 - `app/page.tsx`: indigo layout, two buttons (Spela själv → /spela, Gå med i ett lag → /lag)
