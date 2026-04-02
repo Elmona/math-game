@@ -9,6 +9,7 @@ import {
   QUESTIONS_PER_ROUND,
   MAX_WRONG_ATTEMPTS,
 } from "@/lib/config";
+import { calculateScore } from "@/lib/score";
 
 type Phase = "name-entry" | "playing" | "submitting";
 type Feedback = "idle" | "correct" | "wrong" | "reveal";
@@ -207,7 +208,15 @@ export default function GamePage() {
   // ── Submit session ─────────────────────────────────────────────────────
   async function submitSession() {
     setPhase("submitting");
-    const durationMs = Math.max(0, (ROUND_TIME_SECONDS - timeLeftRef.current) * 1000);
+    const remainingSeconds = timeLeftRef.current;
+    const durationMs = Math.max(0, (ROUND_TIME_SECONDS - remainingSeconds) * 1000);
+    // Compute score client-side as fallback in case the API is unavailable
+    const fallbackScore = calculateScore({
+      correct: correctRef.current,
+      reveals: revealsRef.current,
+      remainingSeconds,
+    });
+
     try {
       const res = await fetch("/api/sessions", {
         method: "POST",
@@ -221,12 +230,13 @@ export default function GamePage() {
         }),
       });
       const session = await res.json();
+      const score = typeof session.score === "number" ? session.score : fallbackScore;
       router.push(
-        `/spela/resultat?score=${session.score}&correct=${correctRef.current}&reveals=${revealsRef.current}`
+        `/spela/resultat?score=${score}&correct=${correctRef.current}&reveals=${revealsRef.current}`
       );
     } catch {
       router.push(
-        `/spela/resultat?score=0&correct=${correctRef.current}&reveals=${revealsRef.current}`
+        `/spela/resultat?score=${fallbackScore}&correct=${correctRef.current}&reveals=${revealsRef.current}`
       );
     }
   }
