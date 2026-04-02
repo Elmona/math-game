@@ -24,6 +24,7 @@ A playful, modern math game for children aged 7–14. Play solo or as part of a 
 ## Getting started
 
 ```bash
+nvm use          # switch to correct Node version (see .nvmrc — Node 22 LTS)
 npm install
 npm run dev      # start dev server
 npm test         # run tests

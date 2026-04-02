@@ -67,6 +67,11 @@
 - **Trade-off**: Slight extra setup in Step 0.2. Worth it.
 - **Status**: Accepted
 
+## ADR-015 — Node.js version management with .nvmrc
+- **Decision**: Pin Node.js to v22 LTS via `.nvmrc` and `engines` in `package.json`
+- **Reason**: Node 20 is in maintenance mode and caused eslint-visitor-keys warnings. Node 22 is the active LTS and will be supported until 2027. `.nvmrc` makes it easy for anyone to run `nvm use` and get the right version instantly.
+- **Status**: Accepted
+
 ## ADR-014 — Git workflow: commit early and often
 - **Decision**: Commit frequently — every logical unit of work gets its own commit
   - One commit per file created, per test added, per feature wired up
