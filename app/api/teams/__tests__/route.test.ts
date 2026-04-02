@@ -1,3 +1,6 @@
+/**
+ * @jest-environment node
+ */
 import { POST } from "../route";
 
 jest.mock("@/lib/db/teams", () => ({
