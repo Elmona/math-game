@@ -30,9 +30,9 @@ Updated after each completed step.
 
 ## Phase 4 — Polish & deployment
 
-- [ ] Step 4.1 — Responsive design check
+- [x] Step 4.1 — Responsive design check
 - [ ] Step 4.2 — Vercel deployment setup
-- [ ] Step 4.3 — Supabase production environment
+- [x] Step 4.3 — Supabase local environment (production TBD)
 - [ ] Step 4.4 — Basic e2e test (Playwright)
 
 ---
