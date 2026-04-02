@@ -1,4 +1,4 @@
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 export interface Session {
   id: string;
@@ -25,7 +25,7 @@ interface CreateSessionParams {
 }
 
 export async function createSession(params: CreateSessionParams): Promise<Session> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("game_sessions")
     .insert({
       player_id: params.playerId,

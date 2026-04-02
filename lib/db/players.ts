@@ -1,4 +1,4 @@
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 export interface Player {
   id: string;
@@ -8,7 +8,7 @@ export interface Player {
 }
 
 export async function createPlayer(name: string, teamId?: string): Promise<Player> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("players")
     .insert({ name, team_id: teamId ?? null })
     .select()

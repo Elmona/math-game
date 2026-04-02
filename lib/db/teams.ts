@@ -1,4 +1,4 @@
-import { supabase } from "../supabase";
+import { getSupabase } from "../supabase";
 
 export interface Team {
   id: string;
@@ -8,7 +8,7 @@ export interface Team {
 }
 
 export async function createTeam(name: string, joinCode: string): Promise<Team> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("teams")
     .insert({ name, join_code: joinCode })
     .select()
@@ -19,7 +19,7 @@ export async function createTeam(name: string, joinCode: string): Promise<Team> 
 }
 
 export async function findTeamByJoinCode(joinCode: string): Promise<Team | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("teams")
     .select()
     .eq("join_code", joinCode)
