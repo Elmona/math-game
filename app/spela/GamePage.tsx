@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { generateRound, type Question } from "@/lib/question";
@@ -119,42 +119,46 @@ export default function GamePage() {
   const playerIdRef = useRef<string | null>(initialPlayerId);
   playerIdRef.current = playerId;
 
-  // ── Answer evaluation (shared by numpad ✓ and keyboard Enter) ────────────
-  const evaluateAnswer = useCallback(
-    (raw: string) => {
-      if (feedback !== "idle") return;
-      const guess = parseInt(raw.trim(), 10);
-      if (isNaN(guess) || raw.trim() === "") return;
+  // ── Answer evaluation — redefined every render so it always has fresh state.
+  //    Stored in a ref so the keyboard listener (registered once) can call
+  //    the latest version without stale closures.
+  function evaluate(raw: string) {
+    if (feedback !== "idle") return;
+    const guess = parseInt(raw.trim(), 10);
+    if (isNaN(guess) || !raw.trim()) return;
 
-      const q = questions[current];
-      if (guess === q.answer) {
-        setCorrect((c) => c + 1);
-        setFeedback("correct");
+    const q = questions[current];
+    if (guess === q.answer) {
+      setCorrect((c) => c + 1);
+      setFeedback("correct");
+    } else {
+      const next = wrongAttempts + 1;
+      if (next >= MAX_WRONG_ATTEMPTS) {
+        setReveals((r) => r + 1);
+        setWrongAttempts(0);
+        setFeedback("reveal");
       } else {
-        const next = wrongAttempts + 1;
-        if (next >= MAX_WRONG_ATTEMPTS) {
-          setReveals((r) => r + 1);
-          setWrongAttempts(0);
-          setFeedback("reveal");
-        } else {
-          setWrongAttempts(next);
-          setFeedback("wrong");
-        }
+        setWrongAttempts(next);
+        setFeedback("wrong");
       }
-      setAnswer("");
-    },
-    [feedback, questions, current, wrongAttempts]
-  );
+    }
+    setAnswer("");
+  }
+  const evaluateRef = useRef(evaluate);
+  evaluateRef.current = evaluate; // always points to the fresh version
+
+  // Keep answer in a ref so the keyboard handler can read it without
+  // being part of the effect's dependency array.
+  const answerRef = useRef("");
+  answerRef.current = answer;
 
   // ── Keyboard input (desktop + external keyboards) ────────────────────────
+  // Registered ONCE per game phase — reads from refs so it never goes stale.
   useEffect(() => {
     if (phase !== "playing") return;
 
     function onKeyDown(e: KeyboardEvent) {
-      if (feedback !== "idle") return;
-      // Ignore modifier combos
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-
       if (e.key >= "0" && e.key <= "9") {
         e.preventDefault();
         setAnswer((prev) => (prev.length < 3 ? prev + e.key : prev));
@@ -163,16 +167,13 @@ export default function GamePage() {
         setAnswer((prev) => prev.slice(0, -1));
       } else if (e.key === "Enter") {
         e.preventDefault();
-        setAnswer((prev) => {
-          evaluateAnswer(prev);
-          return prev; // evaluateAnswer clears via its own setAnswer("") call
-        });
+        evaluateRef.current(answerRef.current);
       }
     }
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [phase, feedback, evaluateAnswer]);
+  }, [phase]); // ← stable: only re-registers when the game starts/ends
 
   // ── Timer ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -435,7 +436,7 @@ export default function GamePage() {
           setAnswer((prev) => (prev.length < 3 ? prev + d : prev))
         }
         onDelete={() => setAnswer((prev) => prev.slice(0, -1))}
-        onConfirm={() => evaluateAnswer(answer)}
+        onConfirm={() => evaluate(answer)}
         disabled={feedback !== "idle"}
         hasAnswer={answer.length > 0}
       />
