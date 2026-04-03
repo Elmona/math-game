@@ -14,16 +14,13 @@ export interface TeamRankEntry {
 
 export async function getTopPlayers(limit = 10): Promise<PlayerRankEntry[]> {
   const { data, error } = await getSupabase()
-    .from("game_sessions")
-    .select("score, players(name)")
-    .order("score", { ascending: false })
-    .limit(limit);
+    .rpc("get_top_players", { limit_count: limit });
 
   if (error) throw new Error(error.message);
 
-  return (data ?? []).map((row, i) => ({
+  return (data ?? []).map((row: { name: string; score: number }, i: number) => ({
     rank: i + 1,
-    name: (row.players as unknown as { name: string } | null)?.name ?? "Okänd",
+    name: row.name ?? "Okänd",
     score: row.score,
   }));
 }
