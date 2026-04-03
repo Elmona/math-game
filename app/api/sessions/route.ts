@@ -1,3 +1,4 @@
+import { revalidatePath } from "next/cache";
 import { calculateScore } from "@/lib/score";
 import { QUESTIONS_PER_ROUND, ROUND_TIME_SECONDS } from "@/lib/config";
 import { createSession } from "@/lib/db/sessions";
@@ -55,6 +56,7 @@ export async function POST(request: Request): Promise<Response> {
       startedAt,
       finishedAt,
     });
+    revalidatePath("/topplista");
     return Response.json(
       {
         id: session.id,

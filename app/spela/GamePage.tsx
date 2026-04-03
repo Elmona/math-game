@@ -10,6 +10,7 @@ import {
   MAX_WRONG_ATTEMPTS,
 } from "@/lib/config";
 import { calculateScore } from "@/lib/score";
+import { useLocalPlayer } from "@/lib/hooks/useLocalPlayer";
 
 type Phase = "name-entry" | "playing" | "submitting";
 type Feedback = "idle" | "correct" | "wrong" | "reveal";
@@ -87,6 +88,7 @@ export default function GamePage() {
   const t = useTranslations("game");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { player: storedPlayer, savePlayer, clearPlayer } = useLocalPlayer();
 
   const initialPlayerId = searchParams.get("playerId");
   const teamId = searchParams.get("teamId");
@@ -120,6 +122,15 @@ export default function GamePage() {
 
   // The hidden capture input — focused aggressively so keyboard always works
   const captureRef = useRef<HTMLInputElement>(null);
+
+  // ── Auto-skip name entry if localStorage has a stored player ───────────
+  useEffect(() => {
+    if (storedPlayer && !initialPlayerId && phase === "name-entry") {
+      setPlayerId(storedPlayer.playerId);
+      setPhase("playing");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [storedPlayer]);
 
   // ── Answer evaluation ──────────────────────────────────────────────────
   function evaluate(raw: string) {
@@ -255,6 +266,7 @@ export default function GamePage() {
       });
       const player = await res.json();
       setPlayerId(player.id);
+      savePlayer({ playerId: player.id, playerName: name });
       setPhase("playing");
     } catch {
       setNameError("Något gick fel. Försök igen!");
@@ -267,6 +279,20 @@ export default function GamePage() {
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-10 bg-indigo-950 text-white">
         <div className="w-full max-w-sm flex flex-col gap-6">
           <h1 className="text-3xl font-black text-center tracking-tight">Vad heter du?</h1>
+          {storedPlayer && (
+            <div className="flex items-center justify-between rounded-xl bg-indigo-900 px-4 py-3 text-sm">
+              <span className="text-indigo-200">
+                Spelar som <span className="font-bold text-white">{storedPlayer.playerName}</span>
+              </span>
+              <button
+                type="button"
+                onClick={clearPlayer}
+                className={`text-yellow-400 underline hover:text-yellow-300 ${FOCUS_RING} rounded`}
+              >
+                Byt
+              </button>
+            </div>
+          )}
           <form onSubmit={handleSoloStart} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <label htmlFor="solo-name" className="text-sm font-semibold text-indigo-200">

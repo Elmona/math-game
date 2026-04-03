@@ -3,7 +3,6 @@
 import { createTeam, findTeamByJoinCode } from "@/lib/db/teams";
 import { createPlayer } from "@/lib/db/players";
 import { generateJoinCode } from "@/lib/join-code";
-import { redirect } from "next/navigation";
 
 export type CreateTeamState =
   | { status: "idle" }
@@ -12,7 +11,8 @@ export type CreateTeamState =
 
 export type JoinTeamState =
   | { status: "idle" }
-  | { status: "error"; message: string; field?: "name" | "joinCode" };
+  | { status: "error"; message: string; field?: "name" | "joinCode" }
+  | { status: "success"; playerId: string; teamId: string; teamName: string; joinCode: string; playerName: string };
 
 export async function createTeamAction(
   _prevState: CreateTeamState,
@@ -58,6 +58,7 @@ export async function joinTeamAction(
   }
 
   let teamId: string;
+  let teamName: string;
   try {
     const team = await findTeamByJoinCode(joinCode);
     if (!team) {
@@ -68,6 +69,7 @@ export async function joinTeamAction(
       };
     }
     teamId = team.id;
+    teamName = team.name;
   } catch {
     return { status: "error", message: "Något gick fel. Försök igen!" };
   }
@@ -80,5 +82,5 @@ export async function joinTeamAction(
     return { status: "error", message: "Något gick fel. Försök igen!" };
   }
 
-  redirect(`/spela?playerId=${playerId}&teamId=${teamId}`);
+  return { status: "success", playerId, teamId, teamName, joinCode, playerName: name };
 }

@@ -35,6 +35,13 @@ Updated after each completed step.
 - [x] Step 4.3 — Supabase local environment (production TBD)
 - [ ] Step 4.4 — Basic e2e test (Playwright)
 
+## Phase 5 — UX rework
+
+- [x] Step 5.1 — Fix leaderboard cache (revalidatePath after session save)
+- [x] Step 5.2 — Team join via shareable link
+- [x] Step 5.3 — Persist player name/team in localStorage
+- [x] Step 5.4 — Hamburger menu / shared navigation
+
 ---
 
 ## Log

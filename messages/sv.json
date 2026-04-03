@@ -47,6 +47,16 @@
     "score": "Poäng",
     "empty": "Inga resultat ännu — bli den första!"
   },
+  "nav": {
+    "menu": "Meny",
+    "close": "Stäng meny",
+    "play": "Spela",
+    "teams": "Lag",
+    "leaderboard": "Topplistan",
+    "playingAs": "Spelar som",
+    "change": "Byt",
+    "logout": "Logga ut"
+  },
   "errors": {
     "invalidCode": "Den koden finns inte. Kolla med den som skapade laget!",
     "nameRequired": "Du måste ange ett namn för att spela.",

@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useId, useState } from "react";
+import { useActionState, useEffect, useId, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import {
   createTeamAction,
@@ -9,6 +10,7 @@ import {
   type JoinTeamState,
 } from "./actions";
 import CopyButton from "./CopyButton";
+import { useLocalPlayer } from "@/lib/hooks/useLocalPlayer";
 
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950";
@@ -26,8 +28,15 @@ type Tab = "create" | "join";
 
 export default function TeamPage() {
   const t = useTranslations("team");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { savePlayer } = useLocalPlayer();
 
-  const [activeTab, setActiveTab] = useState<Tab>("create");
+  const urlJoinCode = searchParams.get("joinCode") ?? "";
+
+  const [activeTab, setActiveTab] = useState<Tab>(urlJoinCode ? "join" : "create");
+  const [joinCodeValue, setJoinCodeValue] = useState(urlJoinCode.toUpperCase());
+
   const createPanelId = useId();
   const joinPanelId = useId();
   const createTabId = useId();
@@ -42,6 +51,20 @@ export default function TeamPage() {
     JoinTeamState,
     FormData
   >(joinTeamAction, { status: "idle" });
+
+  // When join succeeds: save to localStorage then navigate
+  useEffect(() => {
+    if (joinState.status !== "success") return;
+    savePlayer({
+      playerId: joinState.playerId,
+      playerName: joinState.playerName,
+      teamId: joinState.teamId,
+      teamName: joinState.teamName,
+      joinCode: joinState.joinCode,
+    });
+    router.push(`/spela?playerId=${joinState.playerId}&teamId=${joinState.teamId}`);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [joinState.status]);
 
   function handleTabKeyDown(
     e: React.KeyboardEvent<HTMLButtonElement>,
@@ -110,7 +133,16 @@ export default function TeamPage() {
               >
                 {createState.joinCode}
               </output>
-              <CopyButton code={createState.joinCode} />
+
+              <div className="flex flex-col gap-2">
+                <CopyButton code={createState.joinCode} />
+                <CopyButton
+                  code={typeof window !== "undefined"
+                    ? `${window.location.origin}/lag?joinCode=${createState.joinCode}`
+                    : ""}
+                  label="Kopiera delningslänk"
+                />
+              </div>
 
               <div className="border-t border-indigo-700 pt-6">
                 <p className="text-indigo-200 mb-4">Vill du spela själv?</p>
@@ -209,6 +241,8 @@ export default function TeamPage() {
                 autoComplete="off"
                 autoCapitalize="characters"
                 maxLength={6}
+                value={joinCodeValue}
+                onChange={(e) => setJoinCodeValue(e.target.value.toUpperCase().slice(0, 6))}
                 className={`${INPUT_CLASS} uppercase tracking-widest`}
                 aria-describedby={
                   joinState.status === "error" && joinState.field !== "name"

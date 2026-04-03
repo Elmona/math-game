@@ -4,6 +4,7 @@
 import { POST } from "../route";
 
 jest.mock("@/lib/db/sessions", () => ({ createSession: jest.fn() }));
+jest.mock("next/cache", () => ({ revalidatePath: jest.fn() }));
 
 const { createSession } = jest.requireMock("@/lib/db/sessions");
 
