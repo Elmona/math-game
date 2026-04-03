@@ -34,7 +34,7 @@ export default function TeamPage() {
 
   const urlJoinCode = searchParams.get("joinCode") ?? "";
 
-  const [activeTab, setActiveTab] = useState<Tab>(urlJoinCode ? "join" : "create");
+  const [activeTab, setActiveTab] = useState<Tab>("join");
   const [joinCodeValue, setJoinCodeValue] = useState(urlJoinCode.toUpperCase());
 
   const createPanelId = useId();
@@ -87,21 +87,6 @@ export default function TeamPage() {
         <div role="tablist" aria-label="Välj läge" className="flex rounded-2xl bg-indigo-900 p-1 gap-1">
           <button
             role="tab"
-            id={createTabId}
-            aria-selected={activeTab === "create"}
-            aria-controls={createPanelId}
-            onClick={() => setActiveTab("create")}
-            onKeyDown={(e) => handleTabKeyDown(e, "create")}
-            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors min-h-[44px] ${FOCUS_RING} ${
-              activeTab === "create"
-                ? "bg-yellow-400 text-indigo-950"
-                : "text-indigo-300 hover:text-white"
-            }`}
-          >
-            {t("createTitle")}
-          </button>
-          <button
-            role="tab"
             id={joinTabId}
             aria-selected={activeTab === "join"}
             aria-controls={joinPanelId}
@@ -115,6 +100,90 @@ export default function TeamPage() {
           >
             {t("joinTitle")}
           </button>
+          <button
+            role="tab"
+            id={createTabId}
+            aria-selected={activeTab === "create"}
+            aria-controls={createPanelId}
+            onClick={() => setActiveTab("create")}
+            onKeyDown={(e) => handleTabKeyDown(e, "create")}
+            className={`flex-1 rounded-xl py-2 text-sm font-semibold transition-colors min-h-[44px] ${FOCUS_RING} ${
+              activeTab === "create"
+                ? "bg-yellow-400 text-indigo-950"
+                : "text-indigo-300 hover:text-white"
+            }`}
+          >
+            {t("createTitle")}
+          </button>
+        </div>
+
+        {/* Join team panel */}
+        <div
+          role="tabpanel"
+          id={joinPanelId}
+          aria-labelledby={joinTabId}
+          hidden={activeTab !== "join"}
+        >
+          <form action={joinAction} className="flex flex-col gap-5">
+            <div className="flex flex-col gap-2">
+              <label htmlFor="player-name" className="text-sm font-semibold text-indigo-200">
+                {t("yourName")}
+              </label>
+              <input
+                id="player-name"
+                name="name"
+                type="text"
+                autoComplete="nickname"
+                className={INPUT_CLASS}
+                aria-describedby={
+                  joinState.status === "error" && joinState.field === "name"
+                    ? "join-name-error"
+                    : undefined
+                }
+              />
+              {joinState.status === "error" && joinState.field === "name" && (
+                <p id="join-name-error" role="alert" className="text-red-400 text-sm">
+                  {joinState.message}
+                </p>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label htmlFor="join-code" className="text-sm font-semibold text-indigo-200">
+                {t("joinCode")}
+              </label>
+              <input
+                id="join-code"
+                name="joinCode"
+                type="text"
+                autoComplete="off"
+                autoCapitalize="characters"
+                maxLength={6}
+                value={joinCodeValue}
+                onChange={(e) => setJoinCodeValue(e.target.value.toUpperCase().slice(0, 6))}
+                className={`${INPUT_CLASS} uppercase tracking-widest`}
+                aria-describedby={
+                  joinState.status === "error" && joinState.field !== "name"
+                    ? "join-code-error"
+                    : undefined
+                }
+              />
+              {joinState.status === "error" && joinState.field !== "name" && (
+                <p id="join-code-error" role="alert" className="text-red-400 text-sm">
+                  {joinState.message}
+                </p>
+              )}
+              {joinState.status === "error" && !joinState.field && (
+                <p role="alert" className="text-red-400 text-sm">
+                  {joinState.message}
+                </p>
+              )}
+            </div>
+
+            <button type="submit" disabled={joinPending} className={BTN_PRIMARY}>
+              {joinPending ? "Går med…" : t("joinButton")}
+            </button>
+          </form>
         </div>
 
         {/* Create team panel */}
@@ -197,75 +266,6 @@ export default function TeamPage() {
               </button>
             </form>
           )}
-        </div>
-
-        {/* Join team panel */}
-        <div
-          role="tabpanel"
-          id={joinPanelId}
-          aria-labelledby={joinTabId}
-          hidden={activeTab !== "join"}
-        >
-          <form action={joinAction} className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2">
-              <label htmlFor="player-name" className="text-sm font-semibold text-indigo-200">
-                {t("yourName")}
-              </label>
-              <input
-                id="player-name"
-                name="name"
-                type="text"
-                autoComplete="nickname"
-                className={INPUT_CLASS}
-                aria-describedby={
-                  joinState.status === "error" && joinState.field === "name"
-                    ? "join-name-error"
-                    : undefined
-                }
-              />
-              {joinState.status === "error" && joinState.field === "name" && (
-                <p id="join-name-error" role="alert" className="text-red-400 text-sm">
-                  {joinState.message}
-                </p>
-              )}
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <label htmlFor="join-code" className="text-sm font-semibold text-indigo-200">
-                {t("joinCode")}
-              </label>
-              <input
-                id="join-code"
-                name="joinCode"
-                type="text"
-                autoComplete="off"
-                autoCapitalize="characters"
-                maxLength={6}
-                value={joinCodeValue}
-                onChange={(e) => setJoinCodeValue(e.target.value.toUpperCase().slice(0, 6))}
-                className={`${INPUT_CLASS} uppercase tracking-widest`}
-                aria-describedby={
-                  joinState.status === "error" && joinState.field !== "name"
-                    ? "join-code-error"
-                    : undefined
-                }
-              />
-              {joinState.status === "error" && joinState.field !== "name" && (
-                <p id="join-code-error" role="alert" className="text-red-400 text-sm">
-                  {joinState.message}
-                </p>
-              )}
-              {joinState.status === "error" && !joinState.field && (
-                <p role="alert" className="text-red-400 text-sm">
-                  {joinState.message}
-                </p>
-              )}
-            </div>
-
-            <button type="submit" disabled={joinPending} className={BTN_PRIMARY}>
-              {joinPending ? "Går med…" : t("joinButton")}
-            </button>
-          </form>
         </div>
 
         <a
