@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { useLocalPlayer } from "@/lib/hooks/useLocalPlayer";
 
@@ -20,6 +21,7 @@ interface NavMenuProps {
 
 export default function NavMenu({ id, isOpen, onClose, triggerRef }: NavMenuProps) {
   const t = useTranslations("nav");
+  const router = useRouter();
   const { player, clearPlayer } = useLocalPlayer();
   const firstItemRef = useRef<HTMLAnchorElement>(null);
 
@@ -83,11 +85,16 @@ export default function NavMenu({ id, isOpen, onClose, triggerRef }: NavMenuProp
               )}
             </div>
             <button
-              onClick={() => { clearPlayer(); onClose(); triggerRef.current?.focus(); }}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-semibold text-red-400 hover:bg-indigo-800 active:scale-95 transition-all min-h-[44px] w-full text-left ${FOCUS_RING}`}
-              aria-label={`${t("logout")} ${player.playerName}`}
+              onClick={() => { clearPlayer(); onClose(); router.push("/spela"); }}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-semibold text-yellow-400 hover:bg-indigo-800 active:scale-95 transition-all min-h-[44px] w-full text-left ${FOCUS_RING}`}
             >
-              <span aria-hidden="true">🚪</span> {t("logout")}
+              <span aria-hidden="true">✏️</span> {t("changeName")}
+            </button>
+            <button
+              onClick={() => { clearPlayer(); onClose(); router.push("/lag"); }}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-lg font-semibold text-yellow-400 hover:bg-indigo-800 active:scale-95 transition-all min-h-[44px] w-full text-left ${FOCUS_RING}`}
+            >
+              <span aria-hidden="true">👥</span> {t("changeTeam")}
             </button>
           </>
         )}

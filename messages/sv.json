@@ -55,7 +55,9 @@
     "leaderboard": "Topplistan",
     "playingAs": "Spelar som",
     "change": "Byt",
-    "logout": "Logga ut"
+    "logout": "Logga ut",
+    "changeName": "Byt namn",
+    "changeTeam": "Byt lag"
   },
   "errors": {
     "invalidCode": "Den koden finns inte. Kolla med den som skapade laget!",
