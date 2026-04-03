@@ -97,7 +97,7 @@ export default function GamePage() {
     initialPlayerId ? "playing" : "name-entry"
   );
   const [playerId, setPlayerId] = useState<string | null>(initialPlayerId);
-  const [questions] = useState<Question[]>(() => generateRound(QUESTIONS_PER_ROUND));
+  const [questions, setQuestions] = useState<Question[] | null>(null);
   const [current, setCurrent] = useState(0);
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [correct, setCorrect] = useState(0);
@@ -123,6 +123,11 @@ export default function GamePage() {
   // The hidden capture input — focused aggressively so keyboard always works
   const captureRef = useRef<HTMLInputElement>(null);
 
+  // ── Generate questions client-side only (Math.random() causes SSR mismatch) ──
+  useEffect(() => {
+    setQuestions(generateRound(QUESTIONS_PER_ROUND));
+  }, []);
+
   // ── Auto-skip name entry if localStorage has a stored player ───────────
   useEffect(() => {
     if (storedPlayer && !initialPlayerId && phase === "name-entry") {
@@ -136,6 +141,7 @@ export default function GamePage() {
   function evaluate(raw: string) {
     // Block during wrong flash and reveal (child needs to read the answer)
     if (feedback === "wrong" || feedback === "reveal") return;
+    if (!questions) return;
     const guess = parseInt(raw.trim(), 10);
     if (isNaN(guess) || !raw.trim()) return;
 
@@ -186,8 +192,8 @@ export default function GamePage() {
 
   // ── Game-over detection ────────────────────────────────────────────────
   useEffect(() => {
-    if (phase !== "playing") return;
-    const done = timeLeft <= 0 || (questions.length > 0 && current >= questions.length);
+    if (phase !== "playing" || !questions) return;
+    const done = timeLeft <= 0 || current >= questions.length;
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
     submitSession();
@@ -250,6 +256,19 @@ export default function GamePage() {
         `/spela/resultat?score=${fallbackScore}&correct=${correctRef.current}&reveals=${revealsRef.current}`
       );
     }
+  }
+
+  // ── Restart ────────────────────────────────────────────────────────────
+  function handleRestart() {
+    submittedRef.current = false;
+    setQuestions(generateRound(QUESTIONS_PER_ROUND));
+    setCurrent(0);
+    setWrongAttempts(0);
+    setCorrect(0);
+    setReveals(0);
+    setTimeLeft(ROUND_TIME_SECONDS);
+    setFeedback("idle");
+    setAnswer("");
   }
 
   // ── Solo name entry ────────────────────────────────────────────────────
@@ -323,7 +342,7 @@ export default function GamePage() {
   }
 
   // ── Submitting ─────────────────────────────────────────────────────────
-  if (phase === "submitting" || current >= questions.length) {
+  if (phase === "submitting" || (questions !== null && current >= questions.length)) {
     return (
       <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl" aria-live="polite">
         Sparar resultat…
@@ -332,6 +351,14 @@ export default function GamePage() {
   }
 
   // ── Game board ─────────────────────────────────────────────────────────
+  if (!questions) {
+    return (
+      <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl">
+        Laddar…
+      </main>
+    );
+  }
+
   const q = questions[current];
   const isUrgent = timeLeft <= 10;
 
@@ -439,6 +466,15 @@ export default function GamePage() {
         disabled={feedback === "wrong" || feedback === "reveal"}
         hasAnswer={answer.length > 0}
       />
+
+      <button
+        type="button"
+        onMouseDown={(e) => e.preventDefault()}
+        onClick={handleRestart}
+        className={`text-sm text-indigo-400 hover:text-indigo-200 underline min-h-[44px] px-4 ${FOCUS_RING} rounded`}
+      >
+        ↺ Börja om
+      </button>
     </main>
   );
 }
