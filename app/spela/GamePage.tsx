@@ -471,7 +471,7 @@ export default function GamePage() {
         type="button"
         onMouseDown={(e) => e.preventDefault()}
         onClick={handleRestart}
-        className={`text-sm text-indigo-400 hover:text-indigo-200 underline min-h-[44px] px-4 ${FOCUS_RING} rounded`}
+        className={`mt-6 text-sm text-indigo-400 hover:text-indigo-200 underline min-h-[44px] px-4 ${FOCUS_RING} rounded`}
       >
         ↺ Börja om
       </button>
