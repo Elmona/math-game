@@ -25,6 +25,19 @@ export async function getTopPlayers(limit = 10): Promise<PlayerRankEntry[]> {
   }));
 }
 
+export async function getTeamLeaderboard(teamId: string, limit = 20): Promise<PlayerRankEntry[]> {
+  const { data, error } = await getSupabase()
+    .rpc("get_team_leaderboard", { team_id_param: teamId, limit_count: limit });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row: { name: string; score: number }, i: number) => ({
+    rank: i + 1,
+    name: row.name ?? "Okänd",
+    score: row.score,
+  }));
+}
+
 export async function getTopTeams(limit = 10): Promise<TeamRankEntry[]> {
   const { data, error } = await getSupabase()
     .from("game_sessions")

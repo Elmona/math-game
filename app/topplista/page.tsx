@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getTranslations } from "next-intl/server";
-import { getTopPlayers, getTopTeams } from "@/lib/db/leaderboard";
+import { getTopPlayers, getTopTeams, getTeamLeaderboard, type PlayerRankEntry } from "@/lib/db/leaderboard";
+import { findTeamByJoinCode } from "@/lib/db/teams";
 import LeaderboardTabs from "./LeaderboardTabs";
 
 export const metadata: Metadata = {
@@ -14,8 +15,13 @@ export const revalidate = 60;
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950";
 
-export default async function LeaderboardPage() {
+export default async function LeaderboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ team?: string }>;
+}) {
   const t = await getTranslations("leaderboard");
+  const { team: teamJoinCode } = await searchParams;
 
   let players: Awaited<ReturnType<typeof getTopPlayers>> = [];
   let teams: Awaited<ReturnType<typeof getTopTeams>> = [];
@@ -25,13 +31,26 @@ export default async function LeaderboardPage() {
     // Supabase not available in dev without env vars — show empty state
   }
 
+  let myTeam: { id: string; name: string; entries: PlayerRankEntry[] } | null = null;
+  if (teamJoinCode) {
+    try {
+      const team = await findTeamByJoinCode(teamJoinCode.toUpperCase());
+      if (team) {
+        const entries = await getTeamLeaderboard(team.id);
+        myTeam = { id: team.id, name: team.name, entries };
+      }
+    } catch {
+      // Team not found or DB unavailable — skip team tab
+    }
+  }
+
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-10 bg-indigo-950 text-white gap-8">
       <h1 className="text-4xl font-black tracking-tight text-center">
         {t("title")}
       </h1>
 
-      <LeaderboardTabs players={players} teams={teams} />
+      <LeaderboardTabs players={players} teams={teams} myTeam={myTeam} />
 
       <div className="flex flex-col items-center gap-3 w-full max-w-sm mt-auto">
         <Link

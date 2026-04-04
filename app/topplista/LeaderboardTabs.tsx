@@ -63,32 +63,52 @@ function RankTable({
   );
 }
 
+type Tab = "individual" | "teams" | "myTeam";
+
 export default function LeaderboardTabs({
   players,
   teams,
+  myTeam,
 }: {
   players: PlayerRankEntry[];
   teams: TeamRankEntry[];
+  myTeam: { id: string; name: string; entries: PlayerRankEntry[] } | null;
 }) {
   const t = useTranslations("leaderboard");
-  const [activeTab, setActiveTab] = useState<"individual" | "teams">("individual");
+  const [activeTab, setActiveTab] = useState<Tab>(myTeam ? "myTeam" : "individual");
 
   const tabs = [
+    ...(myTeam ? [{ id: "myTeam" as const, label: myTeam.name }] : []),
     { id: "individual" as const, label: t("individual") },
     { id: "teams" as const, label: t("teams") },
-  ] as const;
+  ];
+
+  const tabIds = tabs.map((tab) => tab.id);
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    const currentIndex = tabIds.indexOf(activeTab);
+    if (e.key === "ArrowRight") {
+      setActiveTab(tabIds[(currentIndex + 1) % tabIds.length]);
+    } else if (e.key === "ArrowLeft") {
+      setActiveTab(tabIds[(currentIndex - 1 + tabIds.length) % tabIds.length]);
+    }
+  }
 
   return (
     <div className="w-full max-w-sm">
+      {/* Team heading */}
+      {myTeam && activeTab === "myTeam" && (
+        <p className="text-center text-indigo-300 text-sm mb-3">
+          Bästa poäng per spelare i laget
+        </p>
+      )}
+
       {/* Tab list */}
       <div
         role="tablist"
         aria-label={t("title")}
         className="flex rounded-2xl bg-indigo-900 p-1 mb-6"
-        onKeyDown={(e) => {
-          if (e.key === "ArrowRight") setActiveTab("teams");
-          if (e.key === "ArrowLeft") setActiveTab("individual");
-        }}
+        onKeyDown={handleKeyDown}
       >
         {tabs.map((tab) => (
           <button
@@ -100,7 +120,7 @@ export default function LeaderboardTabs({
             tabIndex={activeTab === tab.id ? 0 : -1}
             onClick={() => setActiveTab(tab.id)}
             className={[
-              "flex-1 rounded-xl py-2 text-sm font-bold transition-all",
+              "flex-1 rounded-xl py-2 text-sm font-bold transition-all truncate px-1",
               FOCUS_RING,
               activeTab === tab.id
                 ? "bg-yellow-400 text-indigo-950"
@@ -113,6 +133,16 @@ export default function LeaderboardTabs({
       </div>
 
       {/* Panels */}
+      {myTeam && (
+        <div
+          role="tabpanel"
+          id="panel-myTeam"
+          aria-labelledby="tab-myTeam"
+          hidden={activeTab !== "myTeam"}
+        >
+          <RankTable rows={myTeam.entries} emptyMsg={t("empty")} />
+        </div>
+      )}
       <div
         role="tabpanel"
         id="panel-individual"

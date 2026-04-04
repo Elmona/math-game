@@ -3,6 +3,7 @@
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useTranslations } from "next-intl";
+import { useLocalPlayer } from "@/lib/hooks/useLocalPlayer";
 
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950";
@@ -24,6 +25,7 @@ function ScoreBadge({ score }: { score: number }) {
 export default function ResultsPage() {
   const t = useTranslations("results");
   const p = useSearchParams();
+  const { player } = useLocalPlayer();
 
   const score = Math.max(0, parseInt(p.get("score") ?? "0", 10));
   const correct = Math.max(0, parseInt(p.get("correct") ?? "0", 10));
@@ -80,12 +82,21 @@ export default function ResultsPage() {
         >
           {t("playAgain")}
         </Link>
-        <Link
-          href="/topplista"
-          className={`w-full rounded-2xl bg-indigo-700 px-8 py-4 text-xl font-bold text-white text-center hover:bg-indigo-600 active:scale-95 transition-all min-h-[56px] flex items-center justify-center ${FOCUS_RING}`}
-        >
-          {t("viewLeaderboard")}
-        </Link>
+        {player?.joinCode ? (
+          <Link
+            href={`/topplista?team=${player.joinCode}`}
+            className={`w-full rounded-2xl bg-indigo-700 px-8 py-4 text-xl font-bold text-white text-center hover:bg-indigo-600 active:scale-95 transition-all min-h-[56px] flex items-center justify-center ${FOCUS_RING}`}
+          >
+            Se lagets topplista
+          </Link>
+        ) : (
+          <Link
+            href="/topplista"
+            className={`w-full rounded-2xl bg-indigo-700 px-8 py-4 text-xl font-bold text-white text-center hover:bg-indigo-600 active:scale-95 transition-all min-h-[56px] flex items-center justify-center ${FOCUS_RING}`}
+          >
+            {t("viewLeaderboard")}
+          </Link>
+        )}
         <Link
           href="/"
           className={`text-sm text-indigo-400 hover:text-indigo-200 underline mt-1 ${FOCUS_RING} rounded`}

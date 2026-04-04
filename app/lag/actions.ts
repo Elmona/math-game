@@ -1,7 +1,7 @@
 "use server";
 
 import { createTeam, findTeamByJoinCode } from "@/lib/db/teams";
-import { createPlayer } from "@/lib/db/players";
+import { createPlayer, findPlayerByNameAndTeam } from "@/lib/db/players";
 import { generateJoinCode } from "@/lib/join-code";
 
 export type CreateTeamState =
@@ -76,7 +76,8 @@ export async function joinTeamAction(
 
   let playerId: string;
   try {
-    const player = await createPlayer(name, teamId);
+    const existing = await findPlayerByNameAndTeam(name, teamId);
+    const player = existing ?? (await createPlayer(name, teamId));
     playerId = player.id;
   } catch {
     return { status: "error", message: "Något gick fel. Försök igen!" };
