@@ -17,7 +17,7 @@ type Feedback = "idle" | "correct" | "wrong" | "reveal";
 
 type RoundState = {
   questions: Question[] | null;
-  current: number;
+  questionIndex: number;
   wrongAttempts: number;
   correct: number;
   reveals: number;
@@ -28,7 +28,7 @@ type RoundState = {
 
 const INITIAL_ROUND: RoundState = {
   questions: null,
-  current: 0,
+  questionIndex: 0,
   wrongAttempts: 0,
   correct: 0,
   reveals: 0,
@@ -160,12 +160,12 @@ export default function GamePage() {
     const guess = parseInt(raw.trim(), 10);
     if (isNaN(guess) || !raw.trim()) return;
 
-    const q = round.questions[round.current];
+    const q = round.questions[round.questionIndex];
     if (guess === q.answer) {
       setRound((r) => ({
         ...r,
         correct: r.correct + 1,
-        current: r.current + 1,
+        questionIndex: r.questionIndex + 1,
         wrongAttempts: 0,
         feedback: "correct",
         answer: "",
@@ -191,7 +191,7 @@ export default function GamePage() {
     if (phase === "playing" && round.feedback === "idle") {
       captureRef.current?.focus();
     }
-  }, [phase, round.feedback, round.current]);
+  }, [phase, round.feedback, round.questionIndex]);
 
   // ── Timer ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -213,12 +213,12 @@ export default function GamePage() {
   // ── Game-over detection ────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing" || !round.questions) return;
-    const done = round.timeLeft <= 0 || round.current >= round.questions.length;
+    const done = round.timeLeft <= 0 || round.questionIndex >= round.questions.length;
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
     submitSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [round.timeLeft, round.current, phase]);
+  }, [round.timeLeft, round.questionIndex, phase]);
 
   // ── Feedback flash — clear after a short delay ─────────────────────────
   useEffect(() => {
@@ -235,7 +235,7 @@ export default function GamePage() {
       // Keep the correct answer visible long enough for the child to read it,
       // then advance to the next question
       const id = setTimeout(() => {
-        setRound((r) => ({ ...r, current: r.current + 1, feedback: "idle" }));
+        setRound((r) => ({ ...r, questionIndex: r.questionIndex + 1, feedback: "idle" }));
       }, 2500);
       return () => clearTimeout(id);
     }
@@ -354,7 +354,7 @@ export default function GamePage() {
   }
 
   // ── Submitting ─────────────────────────────────────────────────────────
-  if (phase === "submitting" || (round.questions !== null && round.current >= round.questions.length)) {
+  if (phase === "submitting" || (round.questions !== null && round.questionIndex >= round.questions.length)) {
     return (
       <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl" aria-live="polite">
         Sparar resultat…
@@ -371,7 +371,7 @@ export default function GamePage() {
     );
   }
 
-  const q = round.questions[round.current];
+  const q = round.questions[round.questionIndex];
   const isUrgent = round.timeLeft <= 10;
 
   return (
@@ -388,18 +388,18 @@ export default function GamePage() {
           {round.timeLeft}s
         </span>
         <progress
-          value={round.current}
+          value={round.questionIndex}
           max={QUESTIONS_PER_ROUND}
-          aria-label={`Fråga ${round.current + 1} av ${QUESTIONS_PER_ROUND}`}
+          aria-label={`Fråga ${round.questionIndex + 1} av ${QUESTIONS_PER_ROUND}`}
           className="flex-1 h-3 rounded-full overflow-hidden accent-yellow-400"
         />
         <span aria-hidden="true" className="text-sm text-indigo-300 tabular-nums">
-          {round.current + 1}/{QUESTIONS_PER_ROUND}
+          {round.questionIndex + 1}/{QUESTIONS_PER_ROUND}
         </span>
       </div>
 
       {/* Question */}
-      <div key={round.current} className="question-enter flex flex-col items-center gap-2 text-center" aria-live="polite" aria-atomic="true">
+      <div key={round.questionIndex} className="question-enter flex flex-col items-center gap-2 text-center" aria-live="polite" aria-atomic="true">
         <p className="text-4xl sm:text-5xl font-black tracking-tight">{t("question", { a: q.a, b: q.b })}</p>
       </div>
 
