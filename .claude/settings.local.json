@@ -16,7 +16,17 @@
       "Bash(supabase init:*)",
       "Bash(git remote:*)",
       "Bash(git push:*)",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''version'''',''''?''''\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(d.get\\(''''version'''',''''?''''\\)\\)\")",
+      "Bash(grep -E \"^[^.]*$\")",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_take_screenshot",
+      "mcp__plugin_playwright_playwright__browser_snapshot",
+      "mcp__plugin_playwright_playwright__browser_click",
+      "mcp__plugin_playwright_playwright__browser_type",
+      "mcp__plugin_playwright_playwright__browser_press_key",
+      "Bash(find /Users/emil.n.larsson/code/math-game -name TeamPage.tsx -o -name *team*page*)",
+      "WebSearch",
+      "Skill(update-config)"
     ]
   }
 }
