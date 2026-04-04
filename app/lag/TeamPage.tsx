@@ -163,12 +163,12 @@ export default function TeamPage() {
                 onChange={(e) => setJoinCodeValue(e.target.value.toUpperCase().slice(0, 6))}
                 className={`${INPUT_CLASS} uppercase tracking-widest`}
                 aria-describedby={
-                  joinState.status === "error" && joinState.field !== "name"
+                  joinState.status === "error" && joinState.field === "joinCode"
                     ? "join-code-error"
                     : undefined
                 }
               />
-              {joinState.status === "error" && joinState.field !== "name" && (
+              {joinState.status === "error" && joinState.field === "joinCode" && (
                 <p id="join-code-error" role="alert" className="text-red-400 text-sm">
                   {joinState.message}
                 </p>

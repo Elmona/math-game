@@ -27,8 +27,8 @@ export async function findPlayerByNameAndTeam(
     .select()
     .eq("team_id", teamId)
     .ilike("name", name)
-    .maybeSingle();
+    .limit(1);
 
   if (error) throw new Error(error.message);
-  return data as Player | null;
+  return (data?.[0] ?? null) as Player | null;
 }
