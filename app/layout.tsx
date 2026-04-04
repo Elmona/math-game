@@ -18,12 +18,18 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Mattespelet",
   description: "Träna multiplikation och tävla med kompisar!",
+  appleWebApp: {
+    capable: true,
+    title: "Mattespelet",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: "#1e1b4b",
 };
 
 export default async function RootLayout({
