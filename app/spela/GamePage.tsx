@@ -15,6 +15,28 @@ import { useLocalPlayer } from "@/lib/hooks/useLocalPlayer";
 type Phase = "name-entry" | "playing" | "submitting";
 type Feedback = "idle" | "correct" | "wrong" | "reveal";
 
+type RoundState = {
+  questions: Question[] | null;
+  current: number;
+  wrongAttempts: number;
+  correct: number;
+  reveals: number;
+  timeLeft: number;
+  feedback: Feedback;
+  answer: string;
+};
+
+const INITIAL_ROUND: RoundState = {
+  questions: null,
+  current: 0,
+  wrongAttempts: 0,
+  correct: 0,
+  reveals: 0,
+  timeLeft: ROUND_TIME_SECONDS,
+  feedback: "idle",
+  answer: "",
+};
+
 const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950";
 
@@ -97,14 +119,7 @@ export default function GamePage() {
     initialPlayerId ? "playing" : "name-entry"
   );
   const [playerId, setPlayerId] = useState<string | null>(initialPlayerId);
-  const [questions, setQuestions] = useState<Question[] | null>(null);
-  const [current, setCurrent] = useState(0);
-  const [wrongAttempts, setWrongAttempts] = useState(0);
-  const [correct, setCorrect] = useState(0);
-  const [reveals, setReveals] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(ROUND_TIME_SECONDS);
-  const [feedback, setFeedback] = useState<Feedback>("idle");
-  const [answer, setAnswer] = useState("");
+  const [round, setRound] = useState<RoundState>(INITIAL_ROUND);
   const [playerName, setPlayerName] = useState("");
   const [nameError, setNameError] = useState("");
   const [timerAnnounce, setTimerAnnounce] = useState("");
@@ -112,11 +127,11 @@ export default function GamePage() {
   // Refs for values needed in async/submit callbacks
   const submittedRef = useRef(false);
   const correctRef = useRef(0);
-  correctRef.current = correct;
+  correctRef.current = round.correct;
   const revealsRef = useRef(0);
-  revealsRef.current = reveals;
+  revealsRef.current = round.reveals;
   const timeLeftRef = useRef(ROUND_TIME_SECONDS);
-  timeLeftRef.current = timeLeft;
+  timeLeftRef.current = round.timeLeft;
   const playerIdRef = useRef<string | null>(initialPlayerId);
   playerIdRef.current = playerId;
 
@@ -125,7 +140,7 @@ export default function GamePage() {
 
   // ── Generate questions client-side only (Math.random() causes SSR mismatch) ──
   useEffect(() => {
-    setQuestions(generateRound(QUESTIONS_PER_ROUND));
+    setRound((r) => ({ ...r, questions: generateRound(QUESTIONS_PER_ROUND) }));
   }, []);
 
   // ── Auto-skip name entry if localStorage has a stored player ───────────
@@ -140,87 +155,91 @@ export default function GamePage() {
   // ── Answer evaluation ──────────────────────────────────────────────────
   function evaluate(raw: string) {
     // Block during wrong flash and reveal (child needs to read the answer)
-    if (feedback === "wrong" || feedback === "reveal") return;
-    if (!questions) return;
+    if (round.feedback === "wrong" || round.feedback === "reveal") return;
+    if (!round.questions) return;
     const guess = parseInt(raw.trim(), 10);
     if (isNaN(guess) || !raw.trim()) return;
 
-    const q = questions[current];
+    const q = round.questions[round.current];
     if (guess === q.answer) {
-      setCorrect((c) => c + 1);
-      setFeedback("correct");
-      // Advance immediately so user can type the next question right away
-      setCurrent((c) => c + 1);
-      setWrongAttempts(0);
-      setAnswer("");
+      setRound((r) => ({
+        ...r,
+        correct: r.correct + 1,
+        current: r.current + 1,
+        wrongAttempts: 0,
+        feedback: "correct",
+        answer: "",
+      }));
     } else {
-      const next = wrongAttempts + 1;
+      const next = round.wrongAttempts + 1;
       if (next >= MAX_WRONG_ATTEMPTS) {
-        setReveals((r) => r + 1);
-        setWrongAttempts(0);
-        setFeedback("reveal");
-        // Do NOT advance yet — the feedback effect will advance after the reveal delay
-        setAnswer("");
+        setRound((r) => ({
+          ...r,
+          reveals: r.reveals + 1,
+          wrongAttempts: 0,
+          feedback: "reveal",
+          answer: "",
+        }));
       } else {
-        setWrongAttempts(next);
-        setFeedback("wrong");
-        setAnswer("");
+        setRound((r) => ({ ...r, wrongAttempts: next, feedback: "wrong", answer: "" }));
       }
     }
   }
 
   // ── Aggressive focus — keep keyboard capture input focused during play ──
   useEffect(() => {
-    if (phase === "playing" && feedback === "idle") {
+    if (phase === "playing" && round.feedback === "idle") {
       captureRef.current?.focus();
     }
-  }, [phase, feedback, current]);
+  }, [phase, round.feedback, round.current]);
 
   // ── Timer ──────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "playing") return;
-    const id = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
+    const id = setInterval(
+      () => setRound((r) => ({ ...r, timeLeft: Math.max(0, r.timeLeft - 1) })),
+      1000
+    );
     return () => clearInterval(id);
   }, [phase]);
 
   // Announce timer at milestones only (not every second)
   useEffect(() => {
-    if ([30, 10, 5, 3, 2, 1].includes(timeLeft)) {
-      setTimerAnnounce(`${timeLeft} sekunder kvar`);
+    if ([30, 10, 5, 3, 2, 1].includes(round.timeLeft)) {
+      setTimerAnnounce(`${round.timeLeft} sekunder kvar`);
     }
-  }, [timeLeft]);
+  }, [round.timeLeft]);
 
   // ── Game-over detection ────────────────────────────────────────────────
   useEffect(() => {
-    if (phase !== "playing" || !questions) return;
-    const done = timeLeft <= 0 || current >= questions.length;
+    if (phase !== "playing" || !round.questions) return;
+    const done = round.timeLeft <= 0 || round.current >= round.questions.length;
     if (!done || submittedRef.current) return;
     submittedRef.current = true;
     submitSession();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeLeft, current, phase]);
+  }, [round.timeLeft, round.current, phase]);
 
   // ── Feedback flash — clear after a short delay ─────────────────────────
   useEffect(() => {
-    if (feedback === "idle") return;
-    if (feedback === "wrong") {
-      const id = setTimeout(() => setFeedback("idle"), 700);
+    if (round.feedback === "idle") return;
+    if (round.feedback === "wrong") {
+      const id = setTimeout(() => setRound((r) => ({ ...r, feedback: "idle" })), 700);
       return () => clearTimeout(id);
     }
-    if (feedback === "correct") {
-      const id = setTimeout(() => setFeedback("idle"), 500);
+    if (round.feedback === "correct") {
+      const id = setTimeout(() => setRound((r) => ({ ...r, feedback: "idle" })), 500);
       return () => clearTimeout(id);
     }
-    if (feedback === "reveal") {
+    if (round.feedback === "reveal") {
       // Keep the correct answer visible long enough for the child to read it,
       // then advance to the next question
       const id = setTimeout(() => {
-        setCurrent((c) => c + 1);
-        setFeedback("idle");
+        setRound((r) => ({ ...r, current: r.current + 1, feedback: "idle" }));
       }, 2500);
       return () => clearTimeout(id);
     }
-  }, [feedback]);
+  }, [round.feedback]);
 
   // ── Submit session ─────────────────────────────────────────────────────
   async function submitSession() {
@@ -261,14 +280,7 @@ export default function GamePage() {
   // ── Restart ────────────────────────────────────────────────────────────
   function handleRestart() {
     submittedRef.current = false;
-    setQuestions(generateRound(QUESTIONS_PER_ROUND));
-    setCurrent(0);
-    setWrongAttempts(0);
-    setCorrect(0);
-    setReveals(0);
-    setTimeLeft(ROUND_TIME_SECONDS);
-    setFeedback("idle");
-    setAnswer("");
+    setRound({ ...INITIAL_ROUND, questions: generateRound(QUESTIONS_PER_ROUND) });
   }
 
   // ── Solo name entry ────────────────────────────────────────────────────
@@ -342,7 +354,7 @@ export default function GamePage() {
   }
 
   // ── Submitting ─────────────────────────────────────────────────────────
-  if (phase === "submitting" || (questions !== null && current >= questions.length)) {
+  if (phase === "submitting" || (round.questions !== null && round.current >= round.questions.length)) {
     return (
       <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl" aria-live="polite">
         Sparar resultat…
@@ -351,7 +363,7 @@ export default function GamePage() {
   }
 
   // ── Game board ─────────────────────────────────────────────────────────
-  if (!questions) {
+  if (!round.questions) {
     return (
       <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl">
         Laddar…
@@ -359,8 +371,8 @@ export default function GamePage() {
     );
   }
 
-  const q = questions[current];
-  const isUrgent = timeLeft <= 10;
+  const q = round.questions[round.current];
+  const isUrgent = round.timeLeft <= 10;
 
   return (
     <main className="flex flex-1 flex-col items-center px-4 py-2 sm:py-4 bg-indigo-950 text-white gap-3 sm:gap-4">
@@ -373,28 +385,28 @@ export default function GamePage() {
           aria-hidden="true"
           className={`text-2xl font-bold tabular-nums transition-colors ${isUrgent ? "text-red-400" : "text-indigo-200"}`}
         >
-          {timeLeft}s
+          {round.timeLeft}s
         </span>
         <progress
-          value={current}
+          value={round.current}
           max={QUESTIONS_PER_ROUND}
-          aria-label={`Fråga ${current + 1} av ${QUESTIONS_PER_ROUND}`}
+          aria-label={`Fråga ${round.current + 1} av ${QUESTIONS_PER_ROUND}`}
           className="flex-1 h-3 rounded-full overflow-hidden accent-yellow-400"
         />
         <span aria-hidden="true" className="text-sm text-indigo-300 tabular-nums">
-          {current + 1}/{QUESTIONS_PER_ROUND}
+          {round.current + 1}/{QUESTIONS_PER_ROUND}
         </span>
       </div>
 
       {/* Question */}
-      <div key={current} className="question-enter flex flex-col items-center gap-2 text-center" aria-live="polite" aria-atomic="true">
+      <div key={round.current} className="question-enter flex flex-col items-center gap-2 text-center" aria-live="polite" aria-atomic="true">
         <p className="text-4xl sm:text-5xl font-black tracking-tight">{t("question", { a: q.a, b: q.b })}</p>
       </div>
 
       {/* Wrong-attempt dots */}
-      <div aria-label={`${MAX_WRONG_ATTEMPTS - wrongAttempts} försök kvar`} className="flex gap-2">
+      <div aria-label={`${MAX_WRONG_ATTEMPTS - round.wrongAttempts} försök kvar`} className="flex gap-2">
         {Array.from({ length: MAX_WRONG_ATTEMPTS }).map((_, i) => (
-          <span key={i} className={`w-3 h-3 rounded-full transition-colors ${i < wrongAttempts ? "bg-red-400" : "bg-indigo-600"}`} />
+          <span key={i} className={`w-3 h-3 rounded-full transition-colors ${i < round.wrongAttempts ? "bg-red-400" : "bg-indigo-600"}`} />
         ))}
       </div>
 
@@ -411,13 +423,13 @@ export default function GamePage() {
           aria-hidden="true"
           className={[
             "w-full rounded-2xl border-2 px-6 py-3 sm:py-4 text-center text-3xl sm:text-4xl font-black tabular-nums tracking-widest transition-colors pointer-events-none",
-            feedback === "correct" ? "border-green-400 text-green-400"
-              : feedback === "wrong" ? "border-red-400 text-red-400"
+            round.feedback === "correct" ? "border-green-400 text-green-400"
+              : round.feedback === "wrong" ? "border-red-400 text-red-400"
               : "border-indigo-600 text-white",
-            answer ? "" : "text-indigo-600",
+            round.answer ? "" : "text-indigo-600",
           ].join(" ")}
         >
-          {answer || "—"}
+          {round.answer || "—"}
         </div>
 
         {/* Actual focused input — visually hidden, captures keyboard */}
@@ -427,17 +439,17 @@ export default function GamePage() {
           type="text"
           inputMode="none"
           autoComplete="off"
-          value={answer}
-          disabled={feedback === "wrong" || feedback === "reveal"}
+          value={round.answer}
+          disabled={round.feedback === "wrong" || round.feedback === "reveal"}
           onChange={(e) => {
             // Strip non-digits, max 3 chars (10×10=100 is the max answer)
             const digits = e.target.value.replace(/\D/g, "").slice(0, 3);
-            setAnswer(digits);
+            setRound((r) => ({ ...r, answer: digits }));
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
               e.preventDefault();
-              evaluate(answer);
+              evaluate(round.answer);
             }
           }}
           className="sr-only"
@@ -451,21 +463,28 @@ export default function GamePage() {
         role="alert"
         aria-atomic="true"
         aria-live="assertive"
-        className={`text-center text-xl font-bold min-h-[1.75rem] transition-opacity ${feedback === "idle" ? "opacity-0" : "opacity-100"}`}
+        className={`text-center text-xl font-bold min-h-[1.75rem] transition-opacity ${round.feedback === "idle" ? "opacity-0" : "opacity-100"}`}
       >
-        {feedback === "correct" && <span className="text-green-400">{t("correct")}</span>}
-        {feedback === "wrong" && <span className="text-yellow-300">{t("wrong")}</span>}
-        {feedback === "reveal" && <span className="text-indigo-300">{t("reveal", { answer: q.answer })}</span>}
+        {round.feedback === "correct" && <span className="text-green-400">{t("correct")}</span>}
+        {round.feedback === "wrong" && <span className="text-yellow-300">{t("wrong")}</span>}
+        {round.feedback === "reveal" && <span className="text-indigo-300">{t("reveal", { answer: q.answer })}</span>}
       </div>
 
-      {/* Numpad — onMouseDown preventDefault keeps focus on the capture input */}
-      <Numpad
-        onDigit={(d) => setAnswer((prev) => (prev.length < 3 ? prev + d : prev))}
-        onDelete={() => setAnswer((prev) => prev.slice(0, -1))}
-        onConfirm={() => evaluate(answer)}
-        disabled={feedback === "wrong" || feedback === "reveal"}
-        hasAnswer={answer.length > 0}
-      />
+      {/* Wrapper prevents mobile touch from stealing focus from the capture input.
+          touchstart fires before mousedown, so we must preventDefault here;
+          touchend restores focus as belt-and-suspenders. */}
+      <div
+        onTouchStart={(e) => e.preventDefault()}
+        onTouchEnd={() => captureRef.current?.focus()}
+      >
+        <Numpad
+          onDigit={(d) => setRound((r) => ({ ...r, answer: r.answer.length < 3 ? r.answer + d : r.answer }))}
+          onDelete={() => setRound((r) => ({ ...r, answer: r.answer.slice(0, -1) }))}
+          onConfirm={() => evaluate(round.answer)}
+          disabled={round.feedback === "wrong" || round.feedback === "reveal"}
+          hasAnswer={round.answer.length > 0}
+        />
+      </div>
 
       <button
         type="button"
