@@ -66,8 +66,9 @@ function Numpad({
   disabled: boolean;
   hasAnswer: boolean;
 }) {
+  const t = useTranslations("game");
   return (
-    <div role="group" aria-label="Sifferknappar" className="grid grid-cols-3 gap-2 w-full max-w-sm">
+    <div role="group" aria-label={t("numpad")} className="grid grid-cols-3 gap-2 w-full max-w-sm">
       {NUMPAD_KEYS.map((key) => {
         const isConfirm = key === "✓";
         const isDelete = key === "⌫";
@@ -77,7 +78,7 @@ function Numpad({
           <button
             key={key}
             type="button"
-            aria-label={isConfirm ? "Svara" : isDelete ? "Radera" : `Siffra ${key}`}
+            aria-label={isConfirm ? t("numpadConfirm") : isDelete ? t("numpadDelete") : t("numpadDigit", { digit: key })}
             disabled={isDisabled}
             // Prevent focus from leaving the capture input on every tap/click
             onMouseDown={(e) => e.preventDefault()}
@@ -108,6 +109,9 @@ function Numpad({
 // ── Main component ─────────────────────────────────────────────────────────
 export default function GamePage() {
   const t = useTranslations("game");
+  const tCommon = useTranslations("common");
+  const tNav = useTranslations("nav");
+  const tErrors = useTranslations("errors");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { player: storedPlayer, savePlayer, clearPlayer } = useLocalPlayer();
@@ -206,7 +210,7 @@ export default function GamePage() {
   // Announce timer at milestones only (not every second)
   useEffect(() => {
     if ([30, 10, 5, 3, 2, 1].includes(round.timeLeft)) {
-      setTimerAnnounce(`${round.timeLeft} sekunder kvar`);
+      setTimerAnnounce(t("timeLeft", { seconds: round.timeLeft }));
     }
   }, [round.timeLeft]);
 
@@ -287,7 +291,7 @@ export default function GamePage() {
   async function handleSoloStart(e: React.FormEvent) {
     e.preventDefault();
     const name = playerName.trim();
-    if (!name) { setNameError("Du måste ange ett namn för att spela."); return; }
+    if (!name) { setNameError(tErrors("nameRequired")); return; }
     setNameError("");
     try {
       const res = await fetch("/api/players", {
@@ -300,7 +304,7 @@ export default function GamePage() {
       savePlayer({ playerId: player.id, playerName: name });
       setPhase("playing");
     } catch {
-      setNameError("Något gick fel. Försök igen!");
+      setNameError(tErrors("generic"));
     }
   }
 
@@ -309,25 +313,25 @@ export default function GamePage() {
     return (
       <main className="flex flex-1 flex-col items-center justify-center px-4 py-10 bg-indigo-950 text-white">
         <div className="w-full max-w-sm flex flex-col gap-6">
-          <h1 className="text-3xl font-black text-center tracking-tight">Vad heter du?</h1>
+          <h1 className="text-3xl font-black text-center tracking-tight">{t("nameHeading")}</h1>
           {storedPlayer && (
             <div className="flex items-center justify-between rounded-xl bg-indigo-900 px-4 py-3 text-sm">
               <span className="text-indigo-200">
-                Spelar som <span className="font-bold text-white">{storedPlayer.playerName}</span>
+                {tNav("playingAs")} <span className="font-bold text-white">{storedPlayer.playerName}</span>
               </span>
               <button
                 type="button"
                 onClick={clearPlayer}
                 className={`text-yellow-400 underline hover:text-yellow-300 ${FOCUS_RING} rounded`}
               >
-                Byt
+                {tNav("change")}
               </button>
             </div>
           )}
           <form onSubmit={handleSoloStart} className="flex flex-col gap-5">
             <div className="flex flex-col gap-2">
               <label htmlFor="solo-name" className="text-sm font-semibold text-indigo-200">
-                Ditt namn
+                {t("nameLabel")}
               </label>
               <input
                 id="solo-name"
@@ -343,10 +347,10 @@ export default function GamePage() {
                 <p id="name-error" role="alert" className="text-red-400 text-sm">{nameError}</p>
               )}
             </div>
-            <button type="submit" className={BTN_PRIMARY}>Spela! 🚀</button>
+            <button type="submit" className={BTN_PRIMARY}>{t("startButton")}</button>
           </form>
           <a href="/" className={`text-center text-sm text-indigo-400 hover:text-indigo-200 underline ${FOCUS_RING} rounded`}>
-            ← Tillbaka
+            {tCommon("backLink")}
           </a>
         </div>
       </main>
@@ -357,7 +361,7 @@ export default function GamePage() {
   if (phase === "submitting" || (round.questions !== null && round.questionIndex >= round.questions.length)) {
     return (
       <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl" aria-live="polite">
-        Sparar resultat…
+        {t("saving")}
       </main>
     );
   }
@@ -366,7 +370,7 @@ export default function GamePage() {
   if (!round.questions) {
     return (
       <main className="flex flex-1 items-center justify-center bg-indigo-950 text-white text-xl">
-        Laddar…
+        {tCommon("loading")}
       </main>
     );
   }
@@ -390,7 +394,7 @@ export default function GamePage() {
         <progress
           value={round.questionIndex}
           max={QUESTIONS_PER_ROUND}
-          aria-label={`Fråga ${round.questionIndex + 1} av ${QUESTIONS_PER_ROUND}`}
+          aria-label={t("questionProgress", { current: round.questionIndex + 1, total: QUESTIONS_PER_ROUND })}
           className="flex-1 h-3 rounded-full overflow-hidden accent-yellow-400"
         />
         <span aria-hidden="true" className="text-sm text-indigo-300 tabular-nums">
@@ -404,7 +408,7 @@ export default function GamePage() {
       </div>
 
       {/* Wrong-attempt dots */}
-      <div aria-label={`${MAX_WRONG_ATTEMPTS - round.wrongAttempts} försök kvar`} className="flex gap-2">
+      <div aria-label={t("attemptsLeft", { attempts: MAX_WRONG_ATTEMPTS - round.wrongAttempts })} className="flex gap-2">
         {Array.from({ length: MAX_WRONG_ATTEMPTS }).map((_, i) => (
           <span key={i} className={`w-3 h-3 rounded-full transition-colors ${i < round.wrongAttempts ? "bg-red-400" : "bg-indigo-600"}`} />
         ))}
@@ -416,7 +420,7 @@ export default function GamePage() {
           Aggressive focus (via useEffect above) keeps keyboard input working
           even after the numpad buttons are tapped. */}
       <div className="w-full max-w-sm flex flex-col items-center gap-1">
-        <label htmlFor="capture-input" className="sr-only">Ditt svar</label>
+        <label htmlFor="capture-input" className="sr-only">{t("yourAnswer")}</label>
 
         {/* Visual display */}
         <div
@@ -493,7 +497,7 @@ export default function GamePage() {
         onClick={handleRestart}
         className={`mt-6 text-sm text-indigo-400 hover:text-indigo-200 underline min-h-[44px] px-4 ${FOCUS_RING} rounded`}
       >
-        ↺ Börja om
+        {t("restart")}
       </button>
     </main>
   );

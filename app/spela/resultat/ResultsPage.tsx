@@ -9,12 +9,13 @@ const FOCUS_RING =
   "focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-yellow-400 focus-visible:ring-offset-2 focus-visible:ring-offset-indigo-950";
 
 function ScoreBadge({ score }: { score: number }) {
+  const t = useTranslations("results");
   const size =
     score >= 200 ? "text-6xl sm:text-8xl" : score >= 100 ? "text-5xl sm:text-7xl" : "text-5xl sm:text-6xl";
   return (
     <p
       className={`${size} font-black text-yellow-400 tabular-nums leading-none`}
-      aria-label={`${score} poäng`}
+      aria-label={t("scoreAria", { score })}
     >
       {score}
       <span className="text-3xl font-bold text-yellow-300 ml-2">p</span>
@@ -24,6 +25,7 @@ function ScoreBadge({ score }: { score: number }) {
 
 export default function ResultsPage() {
   const t = useTranslations("results");
+  const tCommon = useTranslations("common");
   const p = useSearchParams();
   const { player } = useLocalPlayer();
 
@@ -87,7 +89,7 @@ export default function ResultsPage() {
             href={`/topplista?team=${player.joinCode}`}
             className={`w-full rounded-2xl bg-indigo-700 px-8 py-4 text-xl font-bold text-white text-center hover:bg-indigo-600 active:scale-95 transition-all min-h-[56px] flex items-center justify-center ${FOCUS_RING}`}
           >
-            Se lagets topplista
+            {t("viewTeamLeaderboard")}
           </Link>
         ) : (
           <Link
@@ -101,7 +103,7 @@ export default function ResultsPage() {
           href="/"
           className={`text-sm text-indigo-400 hover:text-indigo-200 underline mt-1 ${FOCUS_RING} rounded`}
         >
-          ← Startsidan
+          {tCommon("homeLink")}
         </Link>
       </div>
     </main>

@@ -21,6 +21,7 @@ export default async function LeaderboardPage({
   searchParams: Promise<{ team?: string }>;
 }) {
   const t = await getTranslations("leaderboard");
+  const tCommon = await getTranslations("common");
   const { team: teamJoinCode } = await searchParams;
 
   let players: Awaited<ReturnType<typeof getTopPlayers>> = [];
@@ -57,13 +58,13 @@ export default async function LeaderboardPage({
           href="/spela"
           className={`w-full rounded-2xl bg-yellow-400 px-8 py-4 text-xl font-bold text-indigo-950 text-center hover:bg-yellow-300 active:scale-95 transition-all min-h-[56px] flex items-center justify-center ${FOCUS_RING}`}
         >
-          Spela!
+          {tCommon("play")}
         </Link>
         <Link
           href="/"
           className={`text-sm text-indigo-400 hover:text-indigo-200 underline ${FOCUS_RING} rounded`}
         >
-          ← Startsidan
+          {tCommon("homeLink")}
         </Link>
       </div>
     </main>

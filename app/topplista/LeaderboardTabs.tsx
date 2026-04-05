@@ -99,7 +99,7 @@ export default function LeaderboardTabs({
       {/* Team heading */}
       {myTeam && activeTab === "myTeam" && (
         <p className="text-center text-indigo-300 text-sm mb-3">
-          Bästa poäng per spelare i laget
+          {t("teamBestScores")}
         </p>
       )}
 

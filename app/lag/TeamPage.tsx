@@ -28,6 +28,7 @@ type Tab = "create" | "join";
 
 export default function TeamPage() {
   const t = useTranslations("team");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const searchParams = useSearchParams();
   const { savePlayer } = useLocalPlayer();
@@ -84,7 +85,7 @@ export default function TeamPage() {
         </h1>
 
         {/* Tab list */}
-        <div role="tablist" aria-label="Välj läge" className="flex rounded-2xl bg-indigo-900 p-1 gap-1">
+        <div role="tablist" aria-label={t("chooseMode")} className="flex rounded-2xl bg-indigo-900 p-1 gap-1">
           <button
             role="tab"
             id={joinTabId}
@@ -181,7 +182,7 @@ export default function TeamPage() {
             </div>
 
             <button type="submit" disabled={joinPending} className={BTN_PRIMARY}>
-              {joinPending ? "Går med…" : t("joinButton")}
+              {joinPending ? t("joiningPending") : t("joinButton")}
             </button>
           </form>
         </div>
@@ -197,7 +198,7 @@ export default function TeamPage() {
             <div className="flex flex-col gap-6 text-center">
               <p className="text-indigo-200">{t("shareCode")}</p>
               <output
-                aria-label="Lagets kod"
+                aria-label={t("joinCode")}
                 className="text-4xl sm:text-5xl font-mono font-black tracking-widest text-yellow-400 break-all"
               >
                 {createState.joinCode}
@@ -209,12 +210,12 @@ export default function TeamPage() {
                   code={typeof window !== "undefined"
                     ? `${window.location.origin}/lag?joinCode=${createState.joinCode}`
                     : ""}
-                  label="Kopiera delningslänk"
+                  label={t("copyLink")}
                 />
               </div>
 
               <div className="border-t border-indigo-700 pt-6">
-                <p className="text-indigo-200 mb-4">Vill du spela själv?</p>
+                <p className="text-indigo-200 mb-4">{t("playYourself")}</p>
                 <form action={joinAction} className="flex flex-col gap-4">
                   <input type="hidden" name="joinCode" value={createState.joinCode} />
                   <div className="flex flex-col gap-2 text-left">
@@ -236,7 +237,7 @@ export default function TeamPage() {
                     </p>
                   )}
                   <button type="submit" disabled={joinPending} className={BTN_PRIMARY}>
-                    {joinPending ? "Går med…" : t("joinButton")}
+                    {joinPending ? t("joiningPending") : t("joinButton")}
                   </button>
                 </form>
               </div>
@@ -262,7 +263,7 @@ export default function TeamPage() {
                 </p>
               )}
               <button type="submit" disabled={createPending} className={BTN_PRIMARY}>
-                {createPending ? "Skapar…" : t("createButton")}
+                {createPending ? t("creatingPending") : t("createButton")}
               </button>
             </form>
           )}
@@ -272,7 +273,7 @@ export default function TeamPage() {
           href="/"
           className={`text-center text-sm text-indigo-400 hover:text-indigo-200 underline ${FOCUS_RING} rounded`}
         >
-          ← Tillbaka
+          {tCommon("backLink")}
         </a>
       </div>
     </main>
