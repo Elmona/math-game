@@ -474,6 +474,7 @@ export default function GamePage() {
           touchstart fires before mousedown, so we must preventDefault here;
           touchend restores focus as belt-and-suspenders. */}
       <div
+        className="w-full max-w-sm"
         onTouchStart={(e) => e.preventDefault()}
         onTouchEnd={() => captureRef.current?.focus()}
       >
